@@ -1,0 +1,85 @@
+
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package chatq;
+
+service MessageHandler {
+
+    rpc SubmitMessage (MessageSubmitRequest) returns (google.protobuf.Empty);
+    rpc SubmitMessages (stream MessageSubmitRequest) returns (google.protobuf.Empty);
+    rpc ListenMessages (MessageListenRequest) returns (stream MessageUpdate);
+    rpc QueryMessages (MessageFilterRequest) returns (stream Message);
+}
+
+message UUID {
+    int64 least = 1;
+    int64 most = 2;
+}
+
+message UUIDs {
+    repeated UUID uuids = 1;
+}
+
+message Servers {
+    repeated string servers = 1;
+}
+
+message MessageAudience {
+    oneof audience {
+        UUIDs players = 1;
+        Servers server = 2;
+    }
+}
+
+message MessageSource {
+    oneof source {
+        UUIDs players = 1;
+        Servers servers = 2;
+    }
+}
+
+message Message {
+    int64 id = 1;
+    int64 timestamp = 2;
+    MessageSource source = 3;
+    MessageAudience audience = 4;
+    string content = 5;
+}
+
+message MessageStub {
+    int64 timestamp = 1;
+    MessageSource source = 2;
+    MessageAudience audience = 3;
+    string content = 4;
+}
+
+message MessageSubmitRequest {
+    MessageStub stub = 1;
+}
+
+message MessageUpdate {
+    Message msg = 1;
+}
+
+message Timestamp {
+    int64 value = 1;
+}
+
+message MessageFilter {
+    oneof condition {
+        Timestamp before = 1;
+        Timestamp after = 2;
+        UUID player = 3;
+        Servers servers = 4;
+    }
+}
+
+message MessageListenRequest {
+    repeated MessageFilter filter = 1;
+}
+
+message MessageFilterRequest {
+    repeated MessageFilter filter = 1;
+}
