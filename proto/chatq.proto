@@ -8,9 +8,9 @@ package chatq;
 service MessageHandler {
 
     rpc SubmitMessage (MessageSubmitRequest) returns (google.protobuf.Empty);
-    rpc SubmitMessages (stream MessageSubmitRequest) returns (google.protobuf.Empty);
+    rpc SubmitMessages (MessageSubmitRequest) returns (google.protobuf.Empty);
     rpc ListenMessages (MessageListenRequest) returns (stream MessageUpdate);
-    rpc QueryMessages (MessageFilterRequest) returns (stream Message);
+    rpc QueryMessages (MessageFilterRequest) returns (QueryMessageResponse);
 }
 
 message UUID {
@@ -47,6 +47,14 @@ message Message {
     string content = 5;
 }
 
+message QueryMessageResponse {
+    repeated Message messages = 1;
+}
+
+message Messages {
+    repeated Message messages = 1;
+}
+
 message MessageStub {
     int64 timestamp = 1;
     MessageSource source = 2;
@@ -55,7 +63,7 @@ message MessageStub {
 }
 
 message MessageSubmitRequest {
-    MessageStub stub = 1;
+    repeated MessageStub stubs = 1;
 }
 
 message MessageUpdate {
