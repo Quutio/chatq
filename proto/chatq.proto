@@ -14,8 +14,7 @@ service MessageHandler {
 }
 
 message UUID {
-    int64 least = 1;
-    int64 most = 2;
+    string value = 1;
 }
 
 message UUIDs {
