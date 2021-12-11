@@ -201,6 +201,7 @@ dependencies = [
  "futures-util",
  "log",
  "prost",
+ "prost-types",
  "rand 0.7.3",
  "sea-orm",
  "serde",
