@@ -1,14 +1,4 @@
-[package]
-name = "chatq-service"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-tokio = { version = "1", features = ["full"] }
-sea-orm = { version = "^0", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros" ], default-features = false }
-
-[lib]
-name = "lib"
-path = "src/lib.rs"
+[workspace]
+members = [
+    "chatq-server",
+]
