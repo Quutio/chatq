@@ -1,5 +1,5 @@
-mod entity;
-mod data;
+pub mod entity;
+pub mod data;
 
 use std::{sync::Arc, time::Duration};
 

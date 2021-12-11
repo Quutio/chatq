@@ -1,5 +1,3 @@
-mod lib;
-
 #[macro_use]
 extern crate log;
 
