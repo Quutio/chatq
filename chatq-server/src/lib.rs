@@ -8,6 +8,10 @@ use tokio::sync::RwLock;
 
 use entity::prelude::*;
 
+pub mod chatq {
+    tonic::include_proto!("chatq");
+}
+
 #[tonic::async_trait]
 pub trait Db {
 
