@@ -14,35 +14,39 @@ service MessageHandler {
     rpc QueryMessages (MessageFilterRequest) returns (QueryMessageResponse);
 }
 
-message UUID {
+message Uuid {
     string value = 1;
 }
 
-message UUIDs {
-    repeated UUID uuids = 1;
+message Uuids {
+    repeated Uuid uuids = 1;
+}
+
+message Server {
+    string value = 1;
 }
 
 message Servers {
-    repeated string servers = 1;
+    repeated Server servers = 1;
 }
 
 message MessageAudience {
     oneof audience {
-        UUIDs players = 1;
+        Uuids players = 1;
         Servers server = 2;
     }
 }
 
 message MessageSource {
     oneof source {
-        UUIDs players = 1;
+        Uuids players = 1;
         Servers servers = 2;
     }
 }
 
 message Message {
     int64 id = 1;
-    int64 timestamp = 2;
+    google.protobuf.Timestamp timestamp = 2;
     MessageSource source = 3;
     MessageAudience audience = 4;
     string content = 5;
@@ -57,7 +61,7 @@ message Messages {
 }
 
 message MessageStub {
-    int64 timestamp = 1;
+    google.protobuf.Timestamp timestamp = 1;
     MessageSource source = 2;
     MessageAudience audience = 3;
     string content = 4;
@@ -75,8 +79,8 @@ message MessageFilter {
     oneof condition {
         google.protobuf.Timestamp before = 1;
         google.protobuf.Timestamp after = 2;
-        UUID player = 3;
-        Servers servers = 4;
+        Uuid player = 3;
+        Server servers = 4;
     }
 }
 
