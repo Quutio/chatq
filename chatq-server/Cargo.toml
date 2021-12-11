@@ -1,5 +1,5 @@
 [package]
-name = "chatq-service"
+name = "chatq-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,6 +8,10 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 sea-orm = { version = "^0", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros" ], default-features = false }
+anyhow = "1"
+log = "0.4"
+env_logger = "0.9"
+
 
 [lib]
 name = "lib"
