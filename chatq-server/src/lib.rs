@@ -1,9 +1,17 @@
+mod entity;
+mod data;
+
 use std::{sync::Arc, time::Duration};
 
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use tokio::sync::RwLock;
 
+use entity::prelude::*;
 
+#[tonic::async_trait]
+pub trait Db {
+
+}
 
 pub struct ChatQDb {
     db: DatabaseConnection,
@@ -19,8 +27,6 @@ impl ChatQDb {
 
         let db = Database::connect(opt).await?;
 
-        Ok(ChatQDb {
-            db,
-        })
+        Ok(ChatQDb { db })
     }
 }
