@@ -2,6 +2,7 @@
 syntax = "proto3";
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
 package chatq;
 
@@ -70,14 +71,10 @@ message MessageUpdate {
     Message msg = 1;
 }
 
-message Timestamp {
-    int64 value = 1;
-}
-
 message MessageFilter {
     oneof condition {
-        Timestamp before = 1;
-        Timestamp after = 2;
+        google.protobuf.Timestamp before = 1;
+        google.protobuf.Timestamp after = 2;
         UUID player = 3;
         Servers servers = 4;
     }
