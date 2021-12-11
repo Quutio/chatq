@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  database:
+    container_name: chatq_db
+    image: "postgres:alpine"
+    ports:
+      - "5432:5432"
+    env_file:
+      - database.env
+    volumes:
+      - database_data:/var/lib/postgresql/chatq/data/
+#  reportas:
+#    container_name: reportas
+#    image: "x7gv/reportas-server:latest"
+#    environment:
+#      - DATABASE_ADDR=reportas_db
+#      - DATABASE_URL=postgresql://chatq:chatq@reportas_db:5432/chatq
+#      - LISTEN_ADDR=0.0.0.0
+#    ports:
+#      - "50051:50051"
+volumes:
+  database_data:
