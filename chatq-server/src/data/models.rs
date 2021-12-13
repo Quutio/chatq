@@ -38,7 +38,7 @@ pub struct Message {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MessageStub {
-    pub timestamp: SystemTime,
+    pub timestamp: NaiveDateTime,
     pub source: MessageSource,
     pub audience: MessageAudience,
     pub content: String,
@@ -184,7 +184,10 @@ impl From<Message> for chatq::Message {
     fn from(f: Message) -> Self {
         Self {
             id: f.id,
-            timestamp: Some(prost_types::Timestamp { seconds: f.timestamp.timestamp(), nanos: 0 }),
+            timestamp: Some(prost_types::Timestamp {
+                seconds: f.timestamp.timestamp(),
+                nanos: 0,
+            }),
             source: Some(f.source.into()),
             audience: Some(f.audience.into()),
             content: f.content,
@@ -195,7 +198,7 @@ impl From<Message> for chatq::Message {
 impl From<chatq::MessageStub> for MessageStub {
     fn from(f: chatq::MessageStub) -> Self {
         Self {
-            timestamp: f.timestamp.unwrap().try_into().unwrap(),
+            timestamp: NaiveDateTime::from_timestamp(f.timestamp.unwrap().seconds, 0),
             source: f.source.unwrap().into(),
             audience: f.audience.unwrap().into(),
             content: f.content,
@@ -206,7 +209,10 @@ impl From<chatq::MessageStub> for MessageStub {
 impl From<MessageStub> for chatq::MessageStub {
     fn from(f: MessageStub) -> Self {
         Self {
-            timestamp: Some(f.timestamp.into()),
+            timestamp: Some(prost_types::Timestamp {
+                seconds: f.timestamp.timestamp(),
+                nanos: 0,
+            }),
             source: Some(f.source.into()),
             audience: Some(f.audience.into()),
             content: f.content,
@@ -237,10 +243,20 @@ impl From<MessageFilter> for chatq::MessageFilter {
     fn from(f: MessageFilter) -> Self {
         match f {
             MessageFilter::Before(bacon) => Self {
-                condition: Some(chatq::message_filter::Condition::Before(prost_types::Timestamp { seconds: bacon.timestamp(), nanos: 0 })),
+                condition: Some(chatq::message_filter::Condition::Before(
+                    prost_types::Timestamp {
+                        seconds: bacon.timestamp(),
+                        nanos: 0,
+                    },
+                )),
             },
             MessageFilter::After(aspargus) => Self {
-                condition: Some(chatq::message_filter::Condition::After(prost_types::Timestamp { seconds: aspargus.timestamp(), nanos: 0 })),
+                condition: Some(chatq::message_filter::Condition::After(
+                    prost_types::Timestamp {
+                        seconds: aspargus.timestamp(),
+                        nanos: 0,
+                    },
+                )),
             },
             MessageFilter::Player(udon) => Self {
                 condition: Some(chatq::message_filter::Condition::Player(chatq::Uuid {
