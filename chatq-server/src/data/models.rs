@@ -1,5 +1,6 @@
 use std::{str::FromStr, time::SystemTime};
 
+use chrono::NaiveDateTime;
 use uuid::Uuid;
 
 use crate::chatq;
@@ -29,7 +30,7 @@ pub enum MessageSource {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message {
     pub id: i64,
-    pub timestamp: SystemTime,
+    pub timestamp: NaiveDateTime,
     pub source: MessageSource,
     pub audience: MessageAudience,
     pub content: String,
@@ -45,8 +46,8 @@ pub struct MessageStub {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageFilter {
-    Before(SystemTime),
-    After(SystemTime),
+    Before(NaiveDateTime),
+    After(NaiveDateTime),
     Player(Uuid),
     Server(Server),
 }
@@ -171,7 +172,7 @@ impl From<chatq::Message> for Message {
     fn from(f: chatq::Message) -> Self {
         Self {
             id: f.id,
-            timestamp: f.timestamp.unwrap().try_into().unwrap(),
+            timestamp: NaiveDateTime::from_timestamp(f.timestamp.unwrap().seconds, 0),
             source: f.source.unwrap().into(),
             audience: f.audience.unwrap().into(),
             content: f.content,
@@ -183,7 +184,7 @@ impl From<Message> for chatq::Message {
     fn from(f: Message) -> Self {
         Self {
             id: f.id,
-            timestamp: Some(f.timestamp.into()),
+            timestamp: Some(prost_types::Timestamp { seconds: f.timestamp.timestamp(), nanos: 0 }),
             source: Some(f.source.into()),
             audience: Some(f.audience.into()),
             content: f.content,
@@ -217,10 +218,10 @@ impl From<chatq::MessageFilter> for MessageFilter {
     fn from(f: chatq::MessageFilter) -> Self {
         match f.condition.unwrap() {
             chatq::message_filter::Condition::Before(bacon) => {
-                MessageFilter::Before(bacon.try_into().unwrap())
+                MessageFilter::Before(NaiveDateTime::from_timestamp(bacon.seconds, 0))
             }
             chatq::message_filter::Condition::After(aspargus) => {
-                MessageFilter::After(aspargus.try_into().unwrap())
+                MessageFilter::After(NaiveDateTime::from_timestamp(aspargus.seconds, 0))
             }
             chatq::message_filter::Condition::Player(udon) => {
                 MessageFilter::Player(Uuid::from_str(&udon.value).unwrap())
@@ -236,10 +237,10 @@ impl From<MessageFilter> for chatq::MessageFilter {
     fn from(f: MessageFilter) -> Self {
         match f {
             MessageFilter::Before(bacon) => Self {
-                condition: Some(chatq::message_filter::Condition::Before(bacon.into())),
+                condition: Some(chatq::message_filter::Condition::Before(prost_types::Timestamp { seconds: bacon.timestamp(), nanos: 0 })),
             },
             MessageFilter::After(aspargus) => Self {
-                condition: Some(chatq::message_filter::Condition::After(aspargus.into())),
+                condition: Some(chatq::message_filter::Condition::After(prost_types::Timestamp { seconds: aspargus.timestamp(), nanos: 0 })),
             },
             MessageFilter::Player(udon) => Self {
                 condition: Some(chatq::message_filter::Condition::Player(chatq::Uuid {
