@@ -1,4 +1,4 @@
-use std::{str::FromStr, time::SystemTime};
+use std::str::FromStr;
 
 use chrono::NaiveDateTime;
 use uuid::Uuid;
