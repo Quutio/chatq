@@ -28,19 +28,19 @@ pub enum MessageSource {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message {
-    id: i64,
-    timestamp: SystemTime,
-    source: MessageSource,
-    audience: MessageAudience,
-    content: String,
+    pub id: i64,
+    pub timestamp: SystemTime,
+    pub source: MessageSource,
+    pub audience: MessageAudience,
+    pub content: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MessageStub {
-    timestamp: SystemTime,
-    source: MessageSource,
-    audience: MessageAudience,
-    content: String,
+    pub timestamp: SystemTime,
+    pub source: MessageSource,
+    pub audience: MessageAudience,
+    pub content: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
