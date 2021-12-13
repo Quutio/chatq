@@ -26,8 +26,16 @@ message Server {
     string value = 1;
 }
 
+message Plugin {
+    string value = 1;
+}
+
 message Servers {
     repeated Server servers = 1;
+}
+
+message Plugins {
+    repeated Plugin plugins = 2;
 }
 
 message MessageAudience {
@@ -40,7 +48,7 @@ message MessageAudience {
 message MessageSource {
     oneof source {
         Uuids players = 1;
-        Servers servers = 2;
+        Plugins plugins = 2;
     }
 }
 
@@ -80,7 +88,7 @@ message MessageFilter {
         google.protobuf.Timestamp before = 1;
         google.protobuf.Timestamp after = 2;
         Uuid player = 3;
-        Server servers = 4;
+        Server server = 4;
     }
 }
 
