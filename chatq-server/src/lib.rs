@@ -1,20 +1,23 @@
-pub mod entity;
 pub mod data;
+pub mod entity;
 
 use std::{sync::Arc, time::Duration};
 
-use sea_orm::{ConnectOptions, Database, DatabaseConnection};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection, Unset};
 use tokio::sync::RwLock;
 
 use entity::prelude::*;
+
+use data::models::*;
+use tonic::async_trait;
 
 pub mod chatq {
     tonic::include_proto!("chatq");
 }
 
-#[tonic::async_trait]
+#[async_trait]
 pub trait Db {
-
+    async fn insert_message(stub: MessageStub) -> anyhow::Result<Message>;
 }
 
 pub struct ChatQDb {
@@ -32,5 +35,15 @@ impl ChatQDb {
         let db = Database::connect(opt).await?;
 
         Ok(ChatQDb { db })
+    }
+}
+
+#[async_trait]
+impl Db for ChatQDb {
+    async fn insert_message(stub: MessageStub) -> anyhow::Result<Message> {
+
+        let message = entity::messages::ActiveModel {
+            ts: stub.timestamp
+        };
     }
 }
