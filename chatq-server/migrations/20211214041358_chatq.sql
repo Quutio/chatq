@@ -1,3 +1,5 @@
+-- Add migration script here
+
 CREATE TABLE message
 (
     id BIGSERIAL NOT NULL,
