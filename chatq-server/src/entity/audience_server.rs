@@ -3,7 +3,7 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "audiences_server")]
+#[sea_orm(table_name = "audience_server")]
 pub struct Model {
     pub id: i64,
     #[sea_orm(primary_key, auto_increment = false)]
@@ -13,18 +13,18 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::messages::Entity",
+        belongs_to = "super::message::Entity",
         from = "Column::Id",
-        to = "super::messages::Column::Id",
+        to = "super::message::Column::Id",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    Messages,
+    Message,
 }
 
-impl Related<super::messages::Entity> for Entity {
+impl Related<super::message::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Messages.def()
+        Relation::Message.def()
     }
 }
 

@@ -2,8 +2,8 @@
 
 pub mod prelude;
 
-pub mod audiences_player;
-pub mod audiences_server;
-pub mod messages;
-pub mod sources_player;
-pub mod sources_plugin;
+pub mod audience_player;
+pub mod audience_server;
+pub mod message;
+pub mod source_player;
+pub mod source_plugin;
