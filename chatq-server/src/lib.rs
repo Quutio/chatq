@@ -1,7 +1,12 @@
 pub mod data;
 pub mod entity;
 
+use chatq::Servers;
+use sea_orm::{ActiveModelTrait, EntityTrait};
+
 use std::{time::Duration};
+
+use entity::prelude::*;
 
 use sea_orm::{ConnectOptions, Database, DatabaseConnection, Set};
 use data::models::*;
@@ -36,7 +41,50 @@ impl ChatQDb {
 #[tonic::async_trait]
 impl Db for ChatQDb {
     async fn insert_message(&self, stub: MessageStub) -> Result<(), Box<dyn std::error::Error>> {
+        
+        let mesg = entity::messages::ActiveModel {
+            issued: Set(stub.timestamp),
+            content: Set(stub.content),
+            ..Default::default()
+        };
 
-        let mesg = entity::messages::ActiveModel {}
+        let mesg = mesg.insert(&self.db).await?;
+
+        let message_id = mesg.message_id.unwrap();
+
+        match stub.audience {
+            MessageAudience::Players(players) => {
+
+                let mut auds: Vec<entity::audiences_player::ActiveModel> = Vec::new();
+
+                for uuid in players {
+                    let aud = entity::audiences_player::ActiveModel {
+                        player: Set(uuid),
+                        message_id: Set(message_id),
+                    };
+
+                    auds.push(aud);
+                }
+
+                AudiencesPlayer::insert_many(auds).exec(&self.db).await?;
+            },
+            MessageAudience::Servers(servers) => {
+
+                let mut auds: Vec<entity::audiences_server::ActiveModel> = Vec::new();
+
+                for server in servers {
+                    let aud = entity::audiences_server::ActiveModel {
+                        server: Set(server.value),
+                        message_id: Set(message_id),
+                    };
+
+                    auds.push(aud);
+                }
+
+                AudiencesServer::insert_many(auds).exec(&self.db).await?;
+            },
+        }
+
+        Ok(())
     }
 }
