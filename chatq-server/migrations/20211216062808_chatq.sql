@@ -1,3 +1,5 @@
+-- Add migration script here
+
 CREATE TABLE messages
 (
     message_id BIGSERIAL NOT NULL,

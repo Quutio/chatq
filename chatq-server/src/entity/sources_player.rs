@@ -3,28 +3,28 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "source_plugin")]
+#[sea_orm(table_name = "sources_player")]
 pub struct Model {
-    pub id: i64,
     #[sea_orm(primary_key, auto_increment = false)]
-    pub uuid: Uuid,
+    pub player: Uuid,
+    pub message_id: Option<i64>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::message::Entity",
-        from = "Column::Id",
-        to = "super::message::Column::Id",
+        belongs_to = "super::messages::Entity",
+        from = "Column::MessageId",
+        to = "super::messages::Column::MessageId",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    Message,
+    Messages,
 }
 
-impl Related<super::message::Entity> for Entity {
+impl Related<super::messages::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Message.def()
+        Relation::Messages.def()
     }
 }
 
