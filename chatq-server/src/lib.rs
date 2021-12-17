@@ -1,8 +1,8 @@
 pub mod data;
 pub mod entity;
 
-use chatq::Servers;
 use sea_orm::{ActiveModelTrait, EntityTrait};
+use sqlx::PgPool;
 
 use std::{time::Duration};
 
@@ -17,7 +17,7 @@ pub mod chatq {
 
 #[tonic::async_trait]
 pub trait Db {
-    async fn insert_message(&self, stub: MessageStub) -> Result<(), Box<dyn std::error::Error>>;
+    async fn insert_message(&self, stub: MessageStub) -> Result<Message, Box<dyn std::error::Error>>;
 }
 
 pub struct ChatQDb {
@@ -32,6 +32,11 @@ impl ChatQDb {
             .idle_timeout(Duration::from_secs(8))
             .sqlx_logging(true);
 
+        {
+            let sqlx_pool = PgPool::connect(addr).await?;
+            sqlx::migrate!().run(&sqlx_pool).await?
+        }
+
         let db = Database::connect(opt).await?;
 
         Ok(ChatQDb { db })
@@ -40,8 +45,10 @@ impl ChatQDb {
 
 #[tonic::async_trait]
 impl Db for ChatQDb {
-    async fn insert_message(&self, stub: MessageStub) -> Result<(), Box<dyn std::error::Error>> {
-        
+    async fn insert_message(&self, stub: MessageStub) -> Result<Message, Box<dyn std::error::Error>> {
+
+        let stub_c = stub.clone();
+
         let mesg = entity::messages::ActiveModel {
             issued: Set(stub.timestamp),
             content: Set(stub.content),
@@ -61,6 +68,7 @@ impl Db for ChatQDb {
                     let aud = entity::audiences_player::ActiveModel {
                         player: Set(uuid),
                         message_id: Set(message_id),
+                        ..Default::default()
                     };
 
                     auds.push(aud);
@@ -76,6 +84,7 @@ impl Db for ChatQDb {
                     let aud = entity::audiences_server::ActiveModel {
                         server: Set(server.value),
                         message_id: Set(message_id),
+                        ..Default::default()
                     };
 
                     auds.push(aud);
@@ -85,6 +94,51 @@ impl Db for ChatQDb {
             },
         }
 
-        Ok(())
+        match stub.source {
+            MessageSource::Players(players) => {
+
+                let mut srcs: Vec<entity::sources_player::ActiveModel> = Vec::new();
+
+                for uuid in players {
+                    let src = entity::sources_player::ActiveModel {
+                        player: Set(uuid),
+                        message_id: Set(message_id),
+                        ..Default::default()
+                    };
+
+                    srcs.push(src);
+                }
+
+                SourcesPlayer::insert_many(srcs).exec(&self.db).await?;
+            },
+            MessageSource::Plugins(plugins) => {
+
+                let mut srcs: Vec<entity::sources_plugin::ActiveModel> = Vec::new();
+
+                for plugin in plugins {
+                    let src = entity::sources_plugin::ActiveModel {
+                        plugin: Set(plugin.value),
+                        message_id: Set(message_id),
+                        ..Default::default()
+                    };
+
+                    srcs.push(src);
+                }
+
+                SourcesPlugin::insert_many(srcs).exec(&self.db).await?;
+            },
+        }
+
+        let model = Messages::find_by_id(message_id).one(&self.db).await?;
+
+        let mesg: Message = Message {
+            id: message_id,
+            timestamp: stub.timestamp,
+            source: stub_c.source,
+            audience: stub_c.audience,
+            content: stub_c.content,
+        };
+
+        Ok(mesg)
     }
 }

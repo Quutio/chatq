@@ -5,9 +5,10 @@ use sea_orm::entity::prelude::*;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "sources_player")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false)]
+    #[sea_orm(primary_key)]
+    pub id: i64,
     pub player: Uuid,
-    pub message_id: Option<i64>,
+    pub message_id: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

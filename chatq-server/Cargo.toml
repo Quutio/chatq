@@ -23,6 +23,7 @@ rand = "0.7"
 uuid = { version = "0.8", features = ["serde", "v4"] }
 chrono = "0.4"
 dotenv = "0.15.0"
+sqlx = { version = "0.5", features = [ "runtime-tokio-rustls" ] }
 
 [build-dependencies]
 tonic-build = "0.6"

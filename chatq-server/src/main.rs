@@ -28,7 +28,9 @@ pub async fn main() {
         content: "Blah Blah Ba Ba Lah".to_owned(),
     };
 
-    db.insert_message(stub).await.unwrap();
+    let yez = db.insert_message(stub).await.unwrap();
+
+    println!("{:?}", yez);
 
     println!("Hello, world!");
 }
