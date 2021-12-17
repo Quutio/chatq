@@ -36,6 +36,18 @@ pub struct Message {
     pub content: String,
 }
 
+impl Message {
+    pub fn from_stub(id: i64, stub: MessageStub) -> Self {
+        Message {
+            id,
+            timestamp: stub.timestamp,
+            source: stub.source,
+            audience: stub.audience,
+            content: stub.content,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct MessageStub {
     pub timestamp: NaiveDateTime,

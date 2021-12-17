@@ -129,15 +129,7 @@ impl Db for ChatQDb {
             },
         }
 
-        let model = Messages::find_by_id(message_id).one(&self.db).await?;
-
-        let mesg: Message = Message {
-            id: message_id,
-            timestamp: stub.timestamp,
-            source: stub_c.source,
-            audience: stub_c.audience,
-            content: stub_c.content,
-        };
+        let mesg = Message::from_stub(message_id, stub_c);
 
         Ok(mesg)
     }
