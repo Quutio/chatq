@@ -8,9 +8,8 @@ package chatq;
 
 service MessageHandler {
 
-    rpc SubmitMessage (MessageSubmitRequest) returns (google.protobuf.Empty);
-    rpc SubmitMessages (MessageSubmitRequest) returns (google.protobuf.Empty);
-    rpc ListenMessages (MessageListenRequest) returns (stream MessageUpdate);
+    rpc InsertMessages (MessageInsertRequest) returns (MessageInsertResponse);
+    rpc ListenMessages (MessageListenRequest) returns (stream MessageBroadcast);
     rpc QueryMessages (MessageFilterRequest) returns (QueryMessageResponse);
 }
 
@@ -75,27 +74,79 @@ message MessageStub {
     string content = 4;
 }
 
-message MessageSubmitRequest {
+message MessageInsertRequest {
     repeated MessageStub stubs = 1;
 }
 
-message MessageUpdate {
+message MessageInsertResponse {
+    Message message = 1;
+}
+
+message MessageBroadcast {
     Message msg = 1;
 }
 
-message MessageFilter {
-    oneof condition {
-        google.protobuf.Timestamp before = 1;
-        google.protobuf.Timestamp after = 2;
-        Uuid player = 3;
-        Server server = 4;
+message MessageFilterPattern {
+    enum OPERATION {
+        AND = 0;
+        OR = 1;
+        NOT = 2;
+    }
+
+    message MessageFilter {
+        message TimestampFilter {
+            oneof condition {
+                google.protobuf.Timestamp equals = 1;
+                google.protobuf.Timestamp greater_than = 2;
+                google.protobuf.Timestamp less_than = 3;
+                google.protobuf.Timestamp greater_than_equal = 4;
+                google.protobuf.Timestamp less_than_equal = 5;
+            }
+        }
+
+        message AudienceFilter {
+            oneof condition {
+                Uuid player = 1;
+                Server server = 2;
+            }
+        }
+
+        message SourceFilter {
+            oneof condition {
+                Uuid player = 1;
+                Plugin plugin = 2;
+            }
+        }
+
+        oneof condition {
+            TimestampFilter insert_timestamp = 1;
+            AudienceFilter audience = 2;
+            SourceFilter source = 3;
+        }
+    }
+
+    message CompositeFilter {
+        OPERATION operation = 1;
+        repeated FilterItem items = 2;
+
+        message FilterItem {
+            oneof type {
+                MessageFilter single = 1;
+                CompositeFilter composite = 2;
+            }
+        }
+    }
+
+    oneof primary_condition {
+        CompositeFilter composite_filter = 1;
+        MessageFilter single_filter = 2;
     }
 }
 
 message MessageListenRequest {
-    repeated MessageFilter filter = 1;
+    repeated MessageFilterPattern filter = 1;
 }
 
 message MessageFilterRequest {
-    repeated MessageFilter filter = 1;
+    repeated MessageFilterPattern filter = 1;
 }
