@@ -32,14 +32,14 @@ pub async fn main() {
 
     let stub = MessageStub {
         timestamp: Utc::now().naive_utc(),
-        source: MessageSource::Players(vec![uuid1.clone()]),
+        source: MessageSource::Players(vec![uuid1]),
         audience: MessageAudience::Servers(vec![Server::new("Helloz"), Server::new("Yez")]),
         content: "Blah Blah Ba Ba Lah".to_owned(),
     };
 
     let stub2 = MessageStub {
         timestamp: Utc::now().naive_utc(),
-        source: MessageSource::Players(vec![uuid2.clone()]),
+        source: MessageSource::Players(vec![uuid2]),
         audience: MessageAudience::Players(vec![uuid1, uuid2]),
         content: "Blah Blah Bssa Ba Lah".to_owned(),
     };

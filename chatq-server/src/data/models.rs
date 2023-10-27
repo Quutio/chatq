@@ -153,7 +153,7 @@ impl Display for SourceFilter {
 
 impl EvaluableFilter for AudienceFilter {
     fn evaluate(&self, message: &Message) -> bool {
-        return match self {
+        match self {
             AudienceFilter::Uuid(uuid) => match &message.audience {
                 MessageAudience::Players(players) => players.contains(uuid),
                 MessageAudience::Servers(_) => false,
@@ -162,13 +162,13 @@ impl EvaluableFilter for AudienceFilter {
                 MessageAudience::Players(_) => false,
                 MessageAudience::Servers(servers) => servers.contains(server),
             },
-        };
+        }
     }
 }
 
 impl EvaluableFilter for SourceFilter {
     fn evaluate(&self, message: &Message) -> bool {
-        return match self {
+        match self {
             SourceFilter::Uuid(uuid) => match &message.source {
                 MessageSource::Players(players) => players.contains(uuid),
                 MessageSource::Plugins(_) => false,
@@ -177,19 +177,19 @@ impl EvaluableFilter for SourceFilter {
                 MessageSource::Players(_) => false,
                 MessageSource::Plugins(plugins) => plugins.contains(plugin),
             },
-        };
+        }
     }
 }
 
 impl EvaluableFilter for TimestampFilter {
     fn evaluate(&self, message: &Message) -> bool {
-        return match self {
+        match self {
             TimestampFilter::Equals(ts) => &message.timestamp == ts,
             TimestampFilter::GreaterThan(ts) => &message.timestamp > ts,
             TimestampFilter::LessThan(ts) => &message.timestamp < ts,
             TimestampFilter::GreaterThanEqual(ts) => &message.timestamp >= ts,
             TimestampFilter::LessThanEqual(ts) => &message.timestamp <= ts,
-        };
+        }
     }
 }
 
@@ -218,20 +218,20 @@ impl Display for MessageFilter {
 
 impl EvaluableFilter for MessageFilter {
     fn evaluate(&self, message: &Message) -> bool {
-        return match self {
+        match self {
             MessageFilter::InsertTimestamp(filter) => filter.evaluate(message),
             MessageFilter::Audience(filter) => filter.evaluate(message),
             MessageFilter::Source(filter) => filter.evaluate(message),
-        };
+        }
     }
 }
 
 impl EvaluableFilter for FilterItem {
     fn evaluate(&self, message: &Message) -> bool {
-        return match &self {
+        match &self {
             FilterItem::Single(single) => single.evaluate(message),
             FilterItem::Composite(composite) => composite.evaluate(message),
-        };
+        }
     }
 }
 
@@ -630,19 +630,19 @@ impl From<CompositeFilter> for chatq::message_filter_pattern::CompositeFilter {
     fn from(value: CompositeFilter) -> Self {
         match value {
             CompositeFilter::Or(filter) => {
-                return Self {
+                Self {
                     operation: Operation::Or as i32,
                     items: filter.into_iter().map(|op| op.into()).collect(),
                 }
             }
             CompositeFilter::And(filter) => {
-                return Self {
+                Self {
                     operation: Operation::And as i32,
                     items: filter.into_iter().map(|op| op.into()).collect(),
                 }
             }
             CompositeFilter::Not(filter) => {
-                return Self {
+                Self {
                     operation: Operation::Not as i32,
                     items: vec![(*filter).into()],
                 }

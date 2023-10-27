@@ -139,7 +139,7 @@ RETURNING id
             let issued: NaiveDateTime = row.get("issued");
             let content: String = row.get("content");
 
-            return (message_id, issued, content);
+            (message_id, issued, content)
         })
         .fetch_all(&mut txn)
         .await?;
@@ -224,10 +224,10 @@ RETURNING id
         let mut res: Vec<Message> = Vec::new();
 
         for f in &foo {
-            let mut a_server = a_server.get(&f.0);
-            let mut a_player = a_player.get(&f.0);
-            let mut s_plugin = s_plugin.get(&f.0);
-            let mut s_player = s_player.get(&f.0);
+            let a_server = a_server.get(&f.0);
+            let a_player = a_player.get(&f.0);
+            let s_plugin = s_plugin.get(&f.0);
+            let s_player = s_player.get(&f.0);
 
             if a_server.is_some() && s_plugin.is_some() {
                 let aud = MessageAudience::Servers(
@@ -270,7 +270,7 @@ RETURNING id
                     s_player
                         .unwrap()
                         .iter()
-                        .map(|op| Uuid::from_bytes(op.1.as_bytes().clone()))
+                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
                         .collect(),
                 );
 
@@ -286,7 +286,7 @@ RETURNING id
                     a_player
                         .unwrap()
                         .iter()
-                        .map(|op| Uuid::from_bytes(op.1.as_bytes().clone()))
+                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
                         .collect(),
                 );
                 let src = MessageSource::Plugins(
@@ -311,14 +311,14 @@ RETURNING id
                     a_player
                         .unwrap()
                         .iter()
-                        .map(|op| Uuid::from_bytes(op.1.as_bytes().clone()))
+                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
                         .collect(),
                 );
                 let src = MessageSource::Players(
                     s_player
                         .unwrap()
                         .iter()
-                        .map(|op| Uuid::from_bytes(op.1.as_bytes().clone()))
+                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
                         .collect(),
                 );
 
