@@ -6,46 +6,35 @@ use chrono::NaiveDateTime;
 use uuid::Uuid;
 
 use crate::chatq;
-use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
-use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
 use crate::chatq::message_filter_pattern;
 use crate::chatq::message_filter_pattern::composite_filter::filter_item::Type;
+use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
+use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
 
-/*
-        match self.filter {
-            MessageFilter::Before(before) => {
-                self.iter.find(|x| x.timestamp < before)
-            },
-            MessageFilter::After(after) => {
-                self.iter.find(|x| x.timestamp > after)
-            },
-            MessageFilter::Player(player) => {
-                self.iter.find(|x| {
-                    match x.audience {
-                        MessageAudience::Players(players) => { return players.contains(&player) },
-                        MessageAudience::Servers(_) => {}
-                    }
-                    match x.source {
-                        MessageSource::Players(players) => { return players.contains(&player) },
-                        MessageSource::Plugins(_) => {},
-                    }
-
-                    false
-                })
-            },
-            MessageFilter::Server(server) => {
-
-            }
-        }
-*/
 #[derive(Debug, Clone, PartialEq)]
 pub struct Server {
     pub value: String,
 }
 
+impl Server {
+    pub fn new(value: &str) -> Self {
+        Self {
+            value: value.to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Plugin {
     pub value: String,
+}
+
+impl Plugin {
+    pub fn new(value: &str) -> Self {
+        Self {
+            value: value.to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -123,7 +112,6 @@ impl Display for TimestampFilter {
         }
     }
 }
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AudienceFilter {
@@ -278,7 +266,6 @@ impl Display for CompositeFilter {
     }
 }
 
-
 impl EvaluableFilter for CompositeFilter {
     fn evaluate(&self, message: &Message) -> bool {
         return match self {
@@ -310,7 +297,6 @@ impl Display for FilterItem {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageFilterPattern {
     Single(MessageFilter),
@@ -321,7 +307,7 @@ impl Display for MessageFilterPattern {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             MessageFilterPattern::Single(single) => write!(f, "{}", single),
-            MessageFilterPattern::Composite(composite) => write!(f, "{}", composite)
+            MessageFilterPattern::Composite(composite) => write!(f, "{}", composite),
         }
     }
 }
@@ -518,42 +504,37 @@ impl From<Uuid> for chatq::Uuid {
 }
 
 impl From<TimestampFilter> for chatq::message_filter_pattern::message_filter::TimestampFilter {
-
     fn from(value: TimestampFilter) -> Self {
         use chatq::message_filter_pattern::message_filter;
 
         message_filter::TimestampFilter {
             condition: Some(match value {
                 TimestampFilter::Equals(ts) => {
-                    message_filter::timestamp_filter::Condition::Equals(
-                        prost_types::Timestamp {
-                            seconds: ts.timestamp(),
-                            nanos: 0,
-                        }
-                    )
+                    message_filter::timestamp_filter::Condition::Equals(prost_types::Timestamp {
+                        seconds: ts.timestamp(),
+                        nanos: 0,
+                    })
                 }
                 TimestampFilter::GreaterThan(ts) => {
                     message_filter::timestamp_filter::Condition::GreaterThan(
                         prost_types::Timestamp {
                             seconds: ts.timestamp(),
                             nanos: 0,
-                        }
+                        },
                     )
                 }
                 TimestampFilter::LessThan(ts) => {
-                    message_filter::timestamp_filter::Condition::LessThan(
-                        prost_types::Timestamp {
-                            seconds: ts.timestamp(),
-                            nanos: 0,
-                        }
-                    )
+                    message_filter::timestamp_filter::Condition::LessThan(prost_types::Timestamp {
+                        seconds: ts.timestamp(),
+                        nanos: 0,
+                    })
                 }
                 TimestampFilter::GreaterThanEqual(ts) => {
                     message_filter::timestamp_filter::Condition::GreaterThanEqual(
                         prost_types::Timestamp {
                             seconds: ts.timestamp(),
                             nanos: 0,
-                        }
+                        },
                     )
                 }
                 TimestampFilter::LessThanEqual(ts) => {
@@ -561,7 +542,7 @@ impl From<TimestampFilter> for chatq::message_filter_pattern::message_filter::Ti
                         prost_types::Timestamp {
                             seconds: ts.timestamp(),
                             nanos: 0,
-                        }
+                        },
                     )
                 }
             }),
@@ -572,28 +553,16 @@ impl From<TimestampFilter> for chatq::message_filter_pattern::message_filter::Ti
 impl From<chatq::message_filter_pattern::message_filter::TimestampFilter> for TimestampFilter {
     fn from(value: chatq::message_filter_pattern::message_filter::TimestampFilter) -> Self {
         match value.condition.unwrap() {
-            Condition::Equals(ts) => {Self::Equals(
-                NaiveDateTime::from_timestamp(ts.seconds, 0)
-            )}
+            Condition::Equals(ts) => Self::Equals(NaiveDateTime::from_timestamp(ts.seconds, 0)),
             Condition::GreaterThan(ts) => {
-                Self::GreaterThan(
-                    NaiveDateTime::from_timestamp(ts.seconds, 0)
-                )
+                Self::GreaterThan(NaiveDateTime::from_timestamp(ts.seconds, 0))
             }
-            Condition::LessThan(ts) => {
-                Self::LessThan(
-                    NaiveDateTime::from_timestamp(ts.seconds, 0)
-                )
-            }
+            Condition::LessThan(ts) => Self::LessThan(NaiveDateTime::from_timestamp(ts.seconds, 0)),
             Condition::GreaterThanEqual(ts) => {
-                Self::GreaterThanEqual(
-                    NaiveDateTime::from_timestamp(ts.seconds, 0)
-                )
+                Self::GreaterThanEqual(NaiveDateTime::from_timestamp(ts.seconds, 0))
             }
             Condition::LessThanEqual(ts) => {
-                Self::LessThanEqual(
-                    NaiveDateTime::from_timestamp(ts.seconds, 0)
-                )
+                Self::LessThanEqual(NaiveDateTime::from_timestamp(ts.seconds, 0))
             }
         }
     }
@@ -604,16 +573,14 @@ impl From<AudienceFilter> for chatq::message_filter_pattern::message_filter::Aud
         use chatq::message_filter_pattern::message_filter;
 
         Self {
-            condition: Some(
-                match value {
-                    AudienceFilter::Uuid(uuid) => {
-                        message_filter::audience_filter::Condition::Player(uuid.into())
-                    }
-                    AudienceFilter::Server(server) => {
-                        message_filter::audience_filter::Condition::Server(server.into())
-                    }
+            condition: Some(match value {
+                AudienceFilter::Uuid(uuid) => {
+                    message_filter::audience_filter::Condition::Player(uuid.into())
                 }
-            )
+                AudienceFilter::Server(server) => {
+                    message_filter::audience_filter::Condition::Server(server.into())
+                }
+            }),
         }
     }
 }
@@ -623,9 +590,7 @@ impl From<chatq::message_filter_pattern::message_filter::AudienceFilter> for Aud
         use chatq::message_filter_pattern::message_filter;
 
         match value.condition.unwrap() {
-            message_filter::audience_filter::Condition::Player(player) => {
-                Self::Uuid(player.into())
-            }
+            message_filter::audience_filter::Condition::Player(player) => Self::Uuid(player.into()),
             message_filter::audience_filter::Condition::Server(server) => {
                 Self::Server(server.into())
             }
@@ -638,16 +603,14 @@ impl From<SourceFilter> for chatq::message_filter_pattern::message_filter::Sourc
         use chatq::message_filter_pattern::message_filter;
 
         Self {
-            condition: Some(
-                match value {
-                    SourceFilter::Uuid(uuid) => {
-                        message_filter::source_filter::Condition::Player(uuid.into())
-                    }
-                    SourceFilter::Plugin(plugin) => {
-                        message_filter::source_filter::Condition::Plugin(plugin.into())
-                    }
+            condition: Some(match value {
+                SourceFilter::Uuid(uuid) => {
+                    message_filter::source_filter::Condition::Player(uuid.into())
                 }
-            )
+                SourceFilter::Plugin(plugin) => {
+                    message_filter::source_filter::Condition::Plugin(plugin.into())
+                }
+            }),
         }
     }
 }
@@ -657,12 +620,8 @@ impl From<chatq::message_filter_pattern::message_filter::SourceFilter> for Sourc
         use chatq::message_filter_pattern::message_filter;
 
         match value.condition.unwrap() {
-            message_filter::source_filter::Condition::Player(player) => {
-                Self::Uuid(player.into())
-            }
-            message_filter::source_filter::Condition::Plugin(plugin) => {
-                Self::Plugin(plugin.into())
-            }
+            message_filter::source_filter::Condition::Player(player) => Self::Uuid(player.into()),
+            message_filter::source_filter::Condition::Plugin(plugin) => Self::Plugin(plugin.into()),
         }
     }
 }
@@ -679,13 +638,13 @@ impl From<CompositeFilter> for chatq::message_filter_pattern::CompositeFilter {
             CompositeFilter::And(filter) => {
                 return Self {
                     operation: Operation::And as i32,
-                    items: filter.into_iter().map(|op| op.into()).collect()
+                    items: filter.into_iter().map(|op| op.into()).collect(),
                 }
             }
             CompositeFilter::Not(filter) => {
                 return Self {
                     operation: Operation::Not as i32,
-                    items: vec![(*filter).into()]
+                    items: vec![(*filter).into()],
                 }
             }
         }
@@ -697,21 +656,25 @@ impl From<MessageFilter> for chatq::message_filter_pattern::MessageFilter {
         use chatq::message_filter_pattern;
 
         match value {
-            MessageFilter::InsertTimestamp(ts) => {
-                message_filter_pattern::MessageFilter {
-                    condition: Some(chatq::message_filter_pattern::message_filter::Condition::InsertTimestamp(ts.into())),
-                }
-            }
-            MessageFilter::Audience(audience) => {
-                message_filter_pattern::MessageFilter {
-                    condition: Some(chatq::message_filter_pattern::message_filter::Condition::Audience(audience.into()))
-                }
-            }
-            MessageFilter::Source(source) => {
-                message_filter_pattern::MessageFilter {
-                    condition: Some(chatq::message_filter_pattern::message_filter::Condition::Source(source.into()))
-                }
-            }
+            MessageFilter::InsertTimestamp(ts) => message_filter_pattern::MessageFilter {
+                condition: Some(
+                    chatq::message_filter_pattern::message_filter::Condition::InsertTimestamp(
+                        ts.into(),
+                    ),
+                ),
+            },
+            MessageFilter::Audience(audience) => message_filter_pattern::MessageFilter {
+                condition: Some(
+                    chatq::message_filter_pattern::message_filter::Condition::Audience(
+                        audience.into(),
+                    ),
+                ),
+            },
+            MessageFilter::Source(source) => message_filter_pattern::MessageFilter {
+                condition: Some(
+                    chatq::message_filter_pattern::message_filter::Condition::Source(source.into()),
+                ),
+            },
         }
     }
 }
@@ -735,15 +698,9 @@ impl From<chatq::message_filter_pattern::MessageFilter> for MessageFilter {
 impl From<chatq::message_filter_pattern::CompositeFilter> for CompositeFilter {
     fn from(value: chatq::message_filter_pattern::CompositeFilter) -> Self {
         match Operation::from_i32(value.operation).unwrap() {
-            Operation::And => {
-                Self::And(value.items.into_iter().map(|op| op.into()).collect())
-            }
-            Operation::Or => {
-                Self::Or(value.items.into_iter().map(|op| op.into()).collect())
-            }
-            Operation::Not => {
-                Self::Not(Box::new(value.items.into_iter().next().unwrap().into()))
-            }
+            Operation::And => Self::And(value.items.into_iter().map(|op| op.into()).collect()),
+            Operation::Or => Self::Or(value.items.into_iter().map(|op| op.into()).collect()),
+            Operation::Not => Self::Not(Box::new(value.items.into_iter().next().unwrap().into())),
         }
     }
 }
@@ -752,32 +709,24 @@ impl From<FilterItem> for chatq::message_filter_pattern::composite_filter::Filte
     fn from(value: FilterItem) -> Self {
         use chatq::message_filter_pattern::composite_filter;
 
-
         match value {
-            FilterItem::Single(single) => {
-                composite_filter::FilterItem {
-                    r#type: Some(composite_filter::filter_item::Type::Single(single.into())),
-                }
-            }
-            FilterItem::Composite(composite) => {
-                composite_filter::FilterItem {
-                    r#type: Some(composite_filter::filter_item::Type::Composite(composite.into())),
-                }
-            }
+            FilterItem::Single(single) => composite_filter::FilterItem {
+                r#type: Some(Type::Single(single.into())),
+            },
+            FilterItem::Composite(composite) => composite_filter::FilterItem {
+                r#type: Some(Type::Composite(
+                    composite.into(),
+                )),
+            },
         }
     }
 }
 
 impl From<chatq::message_filter_pattern::composite_filter::FilterItem> for FilterItem {
     fn from(value: message_filter_pattern::composite_filter::FilterItem) -> Self {
-
         match value.r#type.unwrap() {
-            Type::Single(single) => {
-                Self::Single(single.into())
-            }
-            Type::Composite(composite) => {
-                Self::Composite(composite.into())
-            }
+            Type::Single(single) => Self::Single(single.into()),
+            Type::Composite(composite) => Self::Composite(composite.into()),
         }
     }
 }
@@ -785,23 +734,22 @@ impl From<chatq::message_filter_pattern::composite_filter::FilterItem> for Filte
 impl From<MessageFilterPattern> for chatq::MessageFilterPattern {
     fn from(value: MessageFilterPattern) -> Self {
         match value {
-            MessageFilterPattern::Single(single) => {
-                Self {
-                    primary_condition: PrimaryCondition::SingleFilter(single.into()).into(),
-                }
-            }
-            MessageFilterPattern::Composite(composite) => {
-                Self {
-                    primary_condition: PrimaryCondition::CompositeFilter(composite.into()).into()
-                }
-            }
+            MessageFilterPattern::Single(single) => Self {
+                primary_condition: PrimaryCondition::SingleFilter(single.into()).into(),
+            },
+            MessageFilterPattern::Composite(composite) => Self {
+                primary_condition: PrimaryCondition::CompositeFilter(composite.into()).into(),
+            },
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::data::models::{AudienceFilter, CompositeFilter, EvaluableFilter, FilterItem, Message, MessageAudience, MessageFilter, MessageFilterPattern, MessageSource, Plugin, SourceFilter};
+    use crate::data::models::{
+        AudienceFilter, CompositeFilter, EvaluableFilter, FilterItem, Message, MessageAudience,
+        MessageFilter, MessageFilterPattern, MessageSource, Plugin, SourceFilter,
+    };
     use chrono::Utc;
     use uuid::Uuid;
 
@@ -852,9 +800,9 @@ mod tests {
                     Uuid::from_u128(10),
                 ))),
             ])),
-            FilterItem::Single(MessageFilter::Source(SourceFilter::Plugin(
-                Plugin { value: "qkernel".to_string() },
-            ))),
+            FilterItem::Single(MessageFilter::Source(SourceFilter::Plugin(Plugin {
+                value: "qkernel".to_string(),
+            }))),
         ]));
 
         println!("{:#?}", filter);
