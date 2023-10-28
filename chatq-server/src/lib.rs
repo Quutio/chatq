@@ -8,6 +8,9 @@ use sqlx::{PgPool, Row};
 use std::collections::HashMap;
 use uuid::Uuid;
 
+pub mod grpc;
+pub mod message_handler;
+
 pub mod chatq {
     tonic::include_proto!("chatq");
 }
@@ -210,7 +213,7 @@ RETURNING id
                 "#,
                 f.0
             )
-            .fetch_optional(&mut txn)
+            .fetch_all(&mut txn)
             .await?;
 
             for b in bar {
@@ -229,7 +232,11 @@ RETURNING id
             let s_plugin = s_plugin.get(&f.0);
             let s_player = s_player.get(&f.0);
 
+            println!("ASS {:#?}", (a_server, a_player, s_plugin, s_player));
+
             if a_server.is_some() && s_plugin.is_some() {
+                println!(">>> a");
+
                 let aud = MessageAudience::Servers(
                     a_server
                         .unwrap()
@@ -257,6 +264,8 @@ RETURNING id
                     content: f.2.to_string(),
                 })
             } else if a_server.is_some() && s_player.is_some() {
+                println!(">>> b");
+
                 let aud = MessageAudience::Servers(
                     a_server
                         .unwrap()
@@ -282,6 +291,8 @@ RETURNING id
                     content: f.2.to_string(),
                 })
             } else if a_player.is_some() && s_plugin.is_some() {
+                println!(">>> c");
+
                 let aud = MessageAudience::Players(
                     a_player
                         .unwrap()
@@ -307,6 +318,8 @@ RETURNING id
                     content: f.2.to_string(),
                 })
             } else if a_player.is_some() && s_player.is_some() {
+                println!(">>> d");
+
                 let aud = MessageAudience::Players(
                     a_player
                         .unwrap()
@@ -331,6 +344,8 @@ RETURNING id
                 })
             }
         }
+
+        println!("BAZZ >> {:#?}", res);
 
         txn.commit().await?;
 

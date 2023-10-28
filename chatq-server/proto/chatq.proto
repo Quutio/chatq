@@ -75,7 +75,7 @@ message MessageStub {
 }
 
 message MessageInsertRequest {
-    repeated MessageStub stubs = 1;
+    MessageStub stub = 1;
 }
 
 message MessageInsertResponse {
@@ -144,9 +144,9 @@ message MessageFilterPattern {
 }
 
 message MessageListenRequest {
-    repeated MessageFilterPattern filter = 1;
+    MessageFilterPattern filter = 1;
 }
 
 message MessageFilterRequest {
-    repeated MessageFilterPattern filter = 1;
+    MessageFilterPattern filter = 1;
 }

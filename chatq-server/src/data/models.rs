@@ -1,8 +1,9 @@
-use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+use std::fmt;
 
 use chrono::NaiveDateTime;
+use thiserror::Error;
 use uuid::Uuid;
 
 use crate::chatq;
@@ -78,7 +79,7 @@ pub struct MessageStub {
     pub content: String,
 }
 
-trait EvaluableFilter {
+pub trait EvaluableFilter {
     fn evaluate(&self, message: &Message) -> bool;
 }
 
@@ -345,23 +346,37 @@ impl From<Plugin> for chatq::Plugin {
     }
 }
 
-impl From<chatq::MessageAudience> for MessageAudience {
-    fn from(f: chatq::MessageAudience) -> Self {
-        match f.audience.unwrap() {
-            chatq::message_audience::Audience::Players(players) => MessageAudience::Players(
+#[derive(Error, Debug)]
+pub enum ModelConversionError {
+    #[error("Inner value was not provided")]
+    ValueNotProvided(&'static str),
+    #[error("uuid conversion failure")]
+    UuidConversion(#[from] uuid::Error),
+}
+
+impl TryFrom<chatq::MessageAudience> for MessageAudience {
+    type Error = ModelConversionError;
+
+    fn try_from(f: chatq::MessageAudience) -> Result<Self, Self::Error> {
+        match f
+            .audience
+            .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
+        {
+            chatq::message_audience::Audience::Players(players) => Ok(MessageAudience::Players(
                 players
                     .uuids
                     .into_iter()
-                    .map(|x| Uuid::from_str(&x.value).unwrap())
-                    .collect::<Vec<Uuid>>(),
-            ),
-            chatq::message_audience::Audience::Server(servers) => MessageAudience::Servers(
+                    .map(|x| Uuid::from_str(&x.value))
+                    .collect::<Result<_, _>>()
+                    .map_err(|err| ModelConversionError::UuidConversion(err))?,
+            )),
+            chatq::message_audience::Audience::Server(servers) => Ok(MessageAudience::Servers(
                 servers
                     .servers
                     .into_iter()
                     .map(|x| x.into())
                     .collect::<Vec<Server>>(),
-            ),
+            )),
         }
     }
 }
@@ -391,23 +406,28 @@ impl From<MessageAudience> for chatq::MessageAudience {
     }
 }
 
-impl From<chatq::MessageSource> for MessageSource {
-    fn from(f: chatq::MessageSource) -> Self {
-        match f.source.unwrap() {
-            chatq::message_source::Source::Players(players) => MessageSource::Players(
+impl TryFrom<chatq::MessageSource> for MessageSource {
+    type Error = ModelConversionError;
+
+    fn try_from(f: chatq::MessageSource) -> Result<Self, Self::Error> {
+        match f
+            .source
+            .ok_or_else(|| ModelConversionError::ValueNotProvided("source"))?
+        {
+            chatq::message_source::Source::Players(players) => Ok(MessageSource::Players(
                 players
                     .uuids
                     .into_iter()
-                    .map(|x| Uuid::from_str(&x.value).unwrap())
-                    .collect::<Vec<Uuid>>(),
-            ),
-            chatq::message_source::Source::Plugins(plugins) => MessageSource::Plugins(
+                    .map(|x| Uuid::from_str(&x.value))
+                    .collect::<Result<_, _>>()?,
+            )),
+            chatq::message_source::Source::Plugins(plugins) => Ok(MessageSource::Plugins(
                 plugins
                     .plugins
                     .into_iter()
                     .map(|x| x.into())
                     .collect::<Vec<Plugin>>(),
-            ),
+            )),
         }
     }
 }
@@ -437,15 +457,28 @@ impl From<MessageSource> for chatq::MessageSource {
     }
 }
 
-impl From<chatq::Message> for Message {
-    fn from(f: chatq::Message) -> Self {
-        Self {
+impl TryFrom<chatq::Message> for Message {
+    type Error = ModelConversionError;
+
+    fn try_from(f: chatq::Message) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: f.id,
-            timestamp: NaiveDateTime::from_timestamp(f.timestamp.unwrap().seconds, 0),
-            source: f.source.unwrap().into(),
-            audience: f.audience.unwrap().into(),
+            timestamp: NaiveDateTime::from_timestamp(
+                f.timestamp
+                    .ok_or_else(|| ModelConversionError::ValueNotProvided("timestamp"))?
+                    .seconds,
+                0,
+            ),
+            source: f
+                .source
+                .ok_or_else(|| ModelConversionError::ValueNotProvided("source"))?
+                .try_into()?,
+            audience: f
+                .audience
+                .ok_or_else(|| ModelConversionError::ValueNotProvided("audince"))?
+                .try_into()?,
             content: f.content,
-        }
+        })
     }
 }
 
@@ -464,14 +497,27 @@ impl From<Message> for chatq::Message {
     }
 }
 
-impl From<chatq::MessageStub> for MessageStub {
-    fn from(f: chatq::MessageStub) -> Self {
-        Self {
-            timestamp: NaiveDateTime::from_timestamp(f.timestamp.unwrap().seconds, 0),
-            source: f.source.unwrap().into(),
-            audience: f.audience.unwrap().into(),
+impl TryFrom<chatq::MessageStub> for MessageStub {
+    type Error = ModelConversionError;
+
+    fn try_from(f: chatq::MessageStub) -> Result<Self, Self::Error> {
+        Ok(Self {
+            timestamp: NaiveDateTime::from_timestamp(
+                f.timestamp
+                    .ok_or_else(|| ModelConversionError::ValueNotProvided("timestamp"))?
+                    .seconds,
+                0,
+            ),
+            source: f
+                .source
+                .ok_or_else(|| ModelConversionError::ValueNotProvided("source"))?
+                .try_into()?,
+            audience: f
+                .audience
+                .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
+                .try_into()?,
             content: f.content,
-        }
+        })
     }
 }
 
@@ -489,9 +535,11 @@ impl From<MessageStub> for chatq::MessageStub {
     }
 }
 
-impl From<chatq::Uuid> for Uuid {
-    fn from(value: chatq::Uuid) -> Self {
-        Uuid::from_str(&value.value).unwrap()
+impl TryFrom<chatq::Uuid> for Uuid {
+    type Error = uuid::Error;
+
+    fn try_from(value: chatq::Uuid) -> Result<Self, Self::Error> {
+        Uuid::from_str(&value.value)
     }
 }
 
@@ -505,7 +553,6 @@ impl From<Uuid> for chatq::Uuid {
 
 impl From<TimestampFilter> for chatq::message_filter_pattern::message_filter::TimestampFilter {
     fn from(value: TimestampFilter) -> Self {
-        use chatq::message_filter_pattern::message_filter;
 
         message_filter::TimestampFilter {
             condition: Some(match value {
@@ -550,28 +597,35 @@ impl From<TimestampFilter> for chatq::message_filter_pattern::message_filter::Ti
     }
 }
 
-impl From<chatq::message_filter_pattern::message_filter::TimestampFilter> for TimestampFilter {
-    fn from(value: chatq::message_filter_pattern::message_filter::TimestampFilter) -> Self {
-        match value.condition.unwrap() {
-            Condition::Equals(ts) => Self::Equals(NaiveDateTime::from_timestamp(ts.seconds, 0)),
-            Condition::GreaterThan(ts) => {
-                Self::GreaterThan(NaiveDateTime::from_timestamp(ts.seconds, 0))
+impl TryFrom<chatq::message_filter_pattern::message_filter::TimestampFilter> for TimestampFilter {
+    type Error = ModelConversionError;
+
+    fn try_from(
+        value: chatq::message_filter_pattern::message_filter::TimestampFilter,
+    ) -> Result<Self, Self::Error> {
+        match value
+            .condition
+            .ok_or_else(|| ModelConversionError::ValueNotProvided("condition"))?
+        {
+            Condition::Equals(ts) => Ok(Self::Equals(NaiveDateTime::from_timestamp(ts.seconds, 0))),
+            Condition::GreaterThan(ts) => Ok(Self::GreaterThan(NaiveDateTime::from_timestamp(
+                ts.seconds, 0,
+            ))),
+            Condition::LessThan(ts) => {
+                Ok(Self::LessThan(NaiveDateTime::from_timestamp(ts.seconds, 0)))
             }
-            Condition::LessThan(ts) => Self::LessThan(NaiveDateTime::from_timestamp(ts.seconds, 0)),
-            Condition::GreaterThanEqual(ts) => {
-                Self::GreaterThanEqual(NaiveDateTime::from_timestamp(ts.seconds, 0))
-            }
-            Condition::LessThanEqual(ts) => {
-                Self::LessThanEqual(NaiveDateTime::from_timestamp(ts.seconds, 0))
-            }
+            Condition::GreaterThanEqual(ts) => Ok(Self::GreaterThanEqual(
+                NaiveDateTime::from_timestamp(ts.seconds, 0),
+            )),
+            Condition::LessThanEqual(ts) => Ok(Self::LessThanEqual(NaiveDateTime::from_timestamp(
+                ts.seconds, 0,
+            ))),
         }
     }
 }
 
 impl From<AudienceFilter> for chatq::message_filter_pattern::message_filter::AudienceFilter {
     fn from(value: AudienceFilter) -> Self {
-        use chatq::message_filter_pattern::message_filter;
-
         Self {
             condition: Some(match value {
                 AudienceFilter::Uuid(uuid) => {
@@ -585,14 +639,19 @@ impl From<AudienceFilter> for chatq::message_filter_pattern::message_filter::Aud
     }
 }
 
-impl From<chatq::message_filter_pattern::message_filter::AudienceFilter> for AudienceFilter {
-    fn from(value: message_filter::AudienceFilter) -> Self {
-        use chatq::message_filter_pattern::message_filter;
+impl TryFrom<chatq::message_filter_pattern::message_filter::AudienceFilter> for AudienceFilter {
+    type Error = ModelConversionError;
 
-        match value.condition.unwrap() {
-            message_filter::audience_filter::Condition::Player(player) => Self::Uuid(player.into()),
+    fn try_from(value: message_filter::AudienceFilter) -> Result<Self, Self::Error> {
+        match value
+            .condition
+            .ok_or_else(|| ModelConversionError::ValueNotProvided("condition"))?
+        {
+            message_filter::audience_filter::Condition::Player(player) => {
+                Ok(Self::Uuid(player.try_into()?))
+            }
             message_filter::audience_filter::Condition::Server(server) => {
-                Self::Server(server.into())
+                Ok(Self::Server(server.into()))
             }
         }
     }
@@ -600,8 +659,6 @@ impl From<chatq::message_filter_pattern::message_filter::AudienceFilter> for Aud
 
 impl From<SourceFilter> for chatq::message_filter_pattern::message_filter::SourceFilter {
     fn from(value: SourceFilter) -> Self {
-        use chatq::message_filter_pattern::message_filter;
-
         Self {
             condition: Some(match value {
                 SourceFilter::Uuid(uuid) => {
@@ -615,13 +672,20 @@ impl From<SourceFilter> for chatq::message_filter_pattern::message_filter::Sourc
     }
 }
 
-impl From<chatq::message_filter_pattern::message_filter::SourceFilter> for SourceFilter {
-    fn from(value: message_filter::SourceFilter) -> Self {
-        use chatq::message_filter_pattern::message_filter;
+impl TryFrom<chatq::message_filter_pattern::message_filter::SourceFilter> for SourceFilter {
+    type Error = ModelConversionError;
 
-        match value.condition.unwrap() {
-            message_filter::source_filter::Condition::Player(player) => Self::Uuid(player.into()),
-            message_filter::source_filter::Condition::Plugin(plugin) => Self::Plugin(plugin.into()),
+    fn try_from(value: message_filter::SourceFilter) -> Result<Self, Self::Error> {
+        match value
+            .condition
+            .ok_or_else(|| ModelConversionError::ValueNotProvided("condition"))?
+        {
+            message_filter::source_filter::Condition::Player(player) => {
+                Ok(Self::Uuid(player.try_into()?))
+            }
+            message_filter::source_filter::Condition::Plugin(plugin) => {
+                Ok(Self::Plugin(plugin.into()))
+            }
         }
     }
 }
@@ -629,32 +693,24 @@ impl From<chatq::message_filter_pattern::message_filter::SourceFilter> for Sourc
 impl From<CompositeFilter> for chatq::message_filter_pattern::CompositeFilter {
     fn from(value: CompositeFilter) -> Self {
         match value {
-            CompositeFilter::Or(filter) => {
-                Self {
-                    operation: Operation::Or as i32,
-                    items: filter.into_iter().map(|op| op.into()).collect(),
-                }
-            }
-            CompositeFilter::And(filter) => {
-                Self {
-                    operation: Operation::And as i32,
-                    items: filter.into_iter().map(|op| op.into()).collect(),
-                }
-            }
-            CompositeFilter::Not(filter) => {
-                Self {
-                    operation: Operation::Not as i32,
-                    items: vec![(*filter).into()],
-                }
-            }
+            CompositeFilter::Or(filter) => Self {
+                operation: Operation::Or as i32,
+                items: filter.into_iter().map(|op| op.into()).collect(),
+            },
+            CompositeFilter::And(filter) => Self {
+                operation: Operation::And as i32,
+                items: filter.into_iter().map(|op| op.into()).collect(),
+            },
+            CompositeFilter::Not(filter) => Self {
+                operation: Operation::Not as i32,
+                items: vec![(*filter).into()],
+            },
         }
     }
 }
 
 impl From<MessageFilter> for chatq::message_filter_pattern::MessageFilter {
     fn from(value: MessageFilter) -> Self {
-        use chatq::message_filter_pattern;
-
         match value {
             MessageFilter::InsertTimestamp(ts) => message_filter_pattern::MessageFilter {
                 condition: Some(
@@ -679,28 +735,58 @@ impl From<MessageFilter> for chatq::message_filter_pattern::MessageFilter {
     }
 }
 
-impl From<chatq::message_filter_pattern::MessageFilter> for MessageFilter {
-    fn from(value: message_filter_pattern::MessageFilter) -> Self {
-        match value.condition.unwrap() {
+impl TryFrom<chatq::message_filter_pattern::MessageFilter> for MessageFilter {
+    type Error = ModelConversionError;
+
+    fn try_from(value: message_filter_pattern::MessageFilter) -> Result<Self, Self::Error> {
+        match value
+            .condition
+            .ok_or_else(|| ModelConversionError::ValueNotProvided("condition"))?
+        {
             message_filter_pattern::message_filter::Condition::InsertTimestamp(ts) => {
-                Self::InsertTimestamp(ts.into())
+                Ok(Self::InsertTimestamp(ts.try_into()?))
             }
             message_filter_pattern::message_filter::Condition::Audience(audience) => {
-                Self::Audience(audience.into())
+                Ok(Self::Audience(audience.try_into()?))
             }
             message_filter_pattern::message_filter::Condition::Source(source) => {
-                Self::Source(source.into())
+                Ok(Self::Source(source.try_into()?))
             }
         }
     }
 }
 
-impl From<chatq::message_filter_pattern::CompositeFilter> for CompositeFilter {
-    fn from(value: chatq::message_filter_pattern::CompositeFilter) -> Self {
-        match Operation::from_i32(value.operation).unwrap() {
-            Operation::And => Self::And(value.items.into_iter().map(|op| op.into()).collect()),
-            Operation::Or => Self::Or(value.items.into_iter().map(|op| op.into()).collect()),
-            Operation::Not => Self::Not(Box::new(value.items.into_iter().next().unwrap().into())),
+impl TryFrom<chatq::message_filter_pattern::CompositeFilter> for CompositeFilter {
+    type Error = ModelConversionError;
+
+    fn try_from(
+        value: chatq::message_filter_pattern::CompositeFilter,
+    ) -> Result<Self, Self::Error> {
+        match Operation::from_i32(value.operation)
+            .ok_or_else(|| ModelConversionError::ValueNotProvided("operation"))?
+        {
+            Operation::And => Ok(Self::And(
+                value
+                    .items
+                    .into_iter()
+                    .map(|op| op.try_into())
+                    .collect::<Result<_, _>>()?,
+            )),
+            Operation::Or => Ok(Self::Or(
+                value
+                    .items
+                    .into_iter()
+                    .map(|op| op.try_into())
+                    .collect::<Result<_, _>>()?,
+            )),
+            Operation::Not => Ok(Self::Not(Box::new(
+                value
+                    .items
+                    .into_iter()
+                    .next()
+                    .ok_or_else(|| ModelConversionError::ValueNotProvided("NOT items.next()"))?
+                    .try_into()?,
+            ))),
         }
     }
 }
@@ -714,19 +800,24 @@ impl From<FilterItem> for chatq::message_filter_pattern::composite_filter::Filte
                 r#type: Some(Type::Single(single.into())),
             },
             FilterItem::Composite(composite) => composite_filter::FilterItem {
-                r#type: Some(Type::Composite(
-                    composite.into(),
-                )),
+                r#type: Some(Type::Composite(composite.into())),
             },
         }
     }
 }
 
-impl From<chatq::message_filter_pattern::composite_filter::FilterItem> for FilterItem {
-    fn from(value: message_filter_pattern::composite_filter::FilterItem) -> Self {
-        match value.r#type.unwrap() {
-            Type::Single(single) => Self::Single(single.into()),
-            Type::Composite(composite) => Self::Composite(composite.into()),
+impl TryFrom<chatq::message_filter_pattern::composite_filter::FilterItem> for FilterItem {
+    type Error = ModelConversionError;
+
+    fn try_from(
+        value: message_filter_pattern::composite_filter::FilterItem,
+    ) -> Result<Self, Self::Error> {
+        match value
+            .r#type
+            .ok_or_else(|| ModelConversionError::ValueNotProvided("type"))?
+        {
+            Type::Single(single) => Ok(Self::Single(single.try_into()?)),
+            Type::Composite(composite) => Ok(Self::Composite(composite.try_into()?)),
         }
     }
 }
@@ -740,6 +831,22 @@ impl From<MessageFilterPattern> for chatq::MessageFilterPattern {
             MessageFilterPattern::Composite(composite) => Self {
                 primary_condition: PrimaryCondition::CompositeFilter(composite.into()).into(),
             },
+        }
+    }
+}
+
+impl TryFrom<chatq::MessageFilterPattern> for MessageFilterPattern {
+    type Error = ModelConversionError;
+
+    fn try_from(value: chatq::MessageFilterPattern) -> Result<Self, Self::Error> {
+        match value
+            .primary_condition
+            .ok_or_else(|| ModelConversionError::ValueNotProvided("primary_condition"))?
+        {
+            PrimaryCondition::CompositeFilter(composite) => {
+                Ok(Self::Composite(composite.try_into()?))
+            }
+            PrimaryCondition::SingleFilter(single) => Ok(Self::Single(single.try_into()?)),
         }
     }
 }
