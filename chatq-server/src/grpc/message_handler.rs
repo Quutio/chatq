@@ -94,7 +94,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
 
         let filter: MessageFilterPattern = filter
             .try_into()
-            .map_err(|_| Status::invalid_argument("invalid filter"))?;
+            .map_err(|err| Status::invalid_argument(format!("invalid filter :: {}", err)))?;
 
         let mut subscribe_rx = self.subscribe_tx.subscribe();
         tokio::spawn(async move {
@@ -142,7 +142,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
 
         let filter: MessageFilterPattern = filter
             .try_into()
-            .map_err(|_| Status::invalid_argument("invalid filter"))?;
+            .map_err(|err| Status::invalid_argument(format!("invalid filter :: {}", err)))?;
 
         let res = self
             .handler
