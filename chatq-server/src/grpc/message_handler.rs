@@ -153,8 +153,6 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
             .await
             .map_err(|err| Status::internal(format!("database failure {}", err.to_string())))?;
 
-        println!("res: {:#?}", res);
-
         let resp = QueryMessageResponse {
             messages: res.into_iter().map(|op| op.into()).collect(),
         };

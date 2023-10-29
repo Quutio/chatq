@@ -12,8 +12,6 @@ pub async fn main() {
     dotenv().ok();
 
     env_logger::builder()
-        .filter_level(log::LevelFilter::Debug)
-        .is_test(true)
         .init();
 
     let db_url = &dotenv::var("DATABASE_URL").unwrap();

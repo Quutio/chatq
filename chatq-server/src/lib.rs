@@ -149,6 +149,8 @@ RETURNING id
         .fetch_all(&mut txn)
         .await?;
 
+        eprintln!("abcde\n\n{:?}\n\n", foo.len());
+
         let mut a_server = HashMap::new();
         let mut a_player = HashMap::new();
         let mut s_plugin = HashMap::new();
@@ -234,117 +236,56 @@ RETURNING id
             let s_plugin = s_plugin.get(&f.0);
             let s_player = s_player.get(&f.0);
 
-            eprintln!("ASS {:#?}", (a_server, a_player, s_plugin, s_player));
+            let aud: MessageAudience;
+            let src: MessageSource;
 
-            if a_server.is_some() && s_plugin.is_some() {
-                eprintln!(">>> a");
-
-                let aud = MessageAudience::Servers(
+            if let Some(a_server) = a_server {
+                aud = MessageAudience::Servers(
                     a_server
-                        .unwrap()
                         .iter()
                         .map(|op| Server {
                             value: op.1.clone(),
                         })
                         .collect(),
-                );
-                let src = MessageSource::Plugins(
-                    s_plugin
-                        .unwrap()
-                        .iter()
-                        .map(|op| Plugin {
-                            value: op.1.clone(),
-                        })
-                        .collect(),
-                );
-
-                res.push(Message {
-                    id: f.0,
-                    timestamp: f.1,
-                    source: src,
-                    audience: aud,
-                    content: f.2.to_string(),
-                })
-            } else if a_server.is_some() && s_player.is_some() {
-                eprintln!(">>> b");
-
-                let aud = MessageAudience::Servers(
-                    a_server
-                        .unwrap()
-                        .iter()
-                        .map(|op| Server {
-                            value: op.1.clone(),
-                        })
-                        .collect(),
-                );
-                let src = MessageSource::Players(
-                    s_player
-                        .unwrap()
-                        .iter()
-                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
-                        .collect(),
-                );
-
-                res.push(Message {
-                    id: f.0,
-                    timestamp: f.1,
-                    source: src,
-                    audience: aud,
-                    content: f.2.to_string(),
-                })
-            } else if a_player.is_some() && s_plugin.is_some() {
-                eprintln!(">>> c");
-
-                let aud = MessageAudience::Players(
+                    )
+            } else if let Some(a_player) = a_player {
+                aud = MessageAudience::Players(
                     a_player
-                        .unwrap()
                         .iter()
                         .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
                         .collect(),
-                );
-                let src = MessageSource::Plugins(
-                    s_plugin
-                        .unwrap()
-                        .iter()
-                        .map(|op| Plugin {
-                            value: op.1.clone(),
-                        })
-                        .collect(),
-                );
-
-                res.push(Message {
-                    id: f.0,
-                    timestamp: f.1,
-                    source: src,
-                    audience: aud,
-                    content: f.2.to_string(),
-                })
-            } else if a_player.is_some() && s_player.is_some() {
-                eprintln!(">>> d");
-
-                let aud = MessageAudience::Players(
-                    a_player
-                        .unwrap()
-                        .iter()
-                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
-                        .collect(),
-                );
-                let src = MessageSource::Players(
-                    s_player
-                        .unwrap()
-                        .iter()
-                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
-                        .collect(),
-                );
-
-                res.push(Message {
-                    id: f.0,
-                    timestamp: f.1,
-                    source: src,
-                    audience: aud,
-                    content: f.2.to_string(),
-                })
+                    )
+            } else {
+                continue;
             }
+
+            if let Some(s_player) = s_player {
+                src = MessageSource::Players(
+                    s_player
+                        .iter()
+                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
+                        .collect(),
+                )
+            } else if let Some(s_plugin) = s_plugin {
+                src = MessageSource::Plugins(
+                    s_plugin
+                        .iter()
+                        .map(|op| Plugin { value: op.1.to_string() })
+                        .collect(),
+                )
+            } else {
+                continue;
+            }
+
+            res.push(
+                Message {
+                    id: f.0,
+                    timestamp: f.1,
+                    source: src,
+                    audience: aud,
+                    content: f.2.to_string(),
+                }
+            )
         }
 
         txn.commit().await?;
