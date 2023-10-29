@@ -1,6 +1,6 @@
+use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use std::fmt;
 
 use chrono::NaiveDateTime;
 use thiserror::Error;
@@ -322,6 +322,75 @@ impl EvaluableFilter for MessageFilterPattern {
     }
 }
 
+pub mod query {
+    use std::fmt::Display;
+
+    use crate::chatq;
+
+    use super::{MessageFilterPattern, ModelConversionError};
+
+    #[derive(Debug, Clone)]
+    pub enum Limit {
+        All,
+        Amount(i32),
+    }
+
+    impl Display for Limit {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Limit::All => write!(f, ""),
+                Limit::Amount(amount) => write!(f, "LIMIT {}", amount),
+            }
+        }
+    }
+
+    impl From<Limit> for chatq::message_query_pattern::Limit {
+        fn from(value: Limit) -> Self {
+            match value {
+                Limit::All => chatq::message_query_pattern::Limit::All(true),
+                Limit::Amount(amount) => chatq::message_query_pattern::Limit::Amount(amount),
+            }
+        }
+    }
+
+    impl TryFrom<chatq::message_query_pattern::Limit> for Limit {
+        type Error = ModelConversionError;
+
+        fn try_from(value: chatq::message_query_pattern::Limit) -> Result<Self, Self::Error> {
+            match value {
+                chatq::message_query_pattern::Limit::All(_) => Ok(Limit::All),
+                chatq::message_query_pattern::Limit::Amount(amount) => Ok(Limit::Amount(amount)),
+            }
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct MessageQueryPattern {
+        pub limit: Limit,
+        pub filter: MessageFilterPattern,
+    }
+
+    impl From<MessageQueryPattern> for chatq::MessageQueryPattern {
+        fn from(value: MessageQueryPattern) -> Self {
+            Self {
+                limit: Some(value.limit.into()),
+                filter: Some(value.filter.into())
+            }
+        }
+    }
+
+    impl TryFrom<chatq::MessageQueryPattern> for MessageQueryPattern {
+        type Error = ModelConversionError;
+
+        fn try_from(value: chatq::MessageQueryPattern) -> Result<Self, Self::Error> {
+            Ok(Self {
+                limit: value.limit.ok_or(ModelConversionError::ValueNotProvided("limit"))?.try_into()?,
+                filter: value.filter.ok_or(ModelConversionError::ValueNotProvided("limit"))?.try_into()?
+            })
+        }
+    }
+}
+
 impl From<chatq::Server> for Server {
     fn from(f: chatq::Server) -> Self {
         Self { value: f.value }
@@ -553,7 +622,6 @@ impl From<Uuid> for chatq::Uuid {
 
 impl From<TimestampFilter> for chatq::message_filter_pattern::message_filter::TimestampFilter {
     fn from(value: TimestampFilter) -> Self {
-
         message_filter::TimestampFilter {
             condition: Some(match value {
                 TimestampFilter::Equals(ts) => {

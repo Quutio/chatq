@@ -1,3 +1,5 @@
+use crate::chatq::MessageQueryRequest;
+use crate::data::models::query::MessageQueryPattern;
 use crate::message_handler::MessageHandler;
 use anyhow::Context;
 use tokio::sync::broadcast;
@@ -7,7 +9,7 @@ use tonic::{async_trait, Request, Response, Status};
 
 use crate::chatq;
 use crate::chatq::{
-    MessageBroadcast, MessageFilterRequest, MessageInsertRequest, MessageInsertResponse,
+    MessageBroadcast, MessageInsertRequest, MessageInsertResponse,
     MessageListenRequest, QueryMessageResponse,
 };
 use crate::data::models::{EvaluableFilter, Message, MessageFilterPattern};
@@ -89,7 +91,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
         let req = request.into_inner().clone();
 
         let filter = req
-            .filter
+            .pattern
             .ok_or(Status::invalid_argument("filter not present"))?;
 
         let filter: MessageFilterPattern = filter
@@ -133,21 +135,21 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
 
     async fn query_messages(
         &self,
-        request: Request<MessageFilterRequest>,
+        request: Request<MessageQueryRequest>,
     ) -> Result<Response<QueryMessageResponse>, Status> {
         let req = request.into_inner();
-        let filter = req
-            .filter
-            .ok_or(Status::invalid_argument("filter not present"))?;
+        let query = req
+            .pattern
+            .ok_or(Status::invalid_argument("pattern not present"))?;
 
-        let filter: MessageFilterPattern = filter
+        let query: MessageQueryPattern = query
             .try_into()
             .map_err(|err| Status::invalid_argument(format!("invalid filter :: {}", err)))?;
 
         let res = self
             .handler
             .db
-            .query_messages(&filter)
+            .query_messages(&query)
             .await
             .map_err(|err| Status::internal(format!("database failure {}", err.to_string())))?;
 

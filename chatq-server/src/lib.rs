@@ -3,6 +3,7 @@ pub mod data;
 use anyhow::Context;
 use chrono::NaiveDateTime;
 use data::models::*;
+use data::models::query::MessageQueryPattern;
 use sqlx::postgres::PgRow;
 use sqlx::{PgPool, Row};
 use std::collections::HashMap;
@@ -119,11 +120,12 @@ RETURNING id
 
     pub async fn query_messages(
         &self,
-        filter: &MessageFilterPattern,
+        query: &MessageQueryPattern,
     ) -> anyhow::Result<Vec<Message>> {
         let mut txn = self.pool.begin().await?;
 
-        let restriction = filter.to_string();
+        let restriction = query.filter.to_string();
+        let limit = query.limit.to_string();
 
         let foo = sqlx::query(&format!(
             r#"
@@ -133,9 +135,9 @@ RETURNING id
             LEFT JOIN audiences_player ON audiences_player.message_id = messages.message_id
             LEFT JOIN sources_plugin ON sources_plugin.message_id = messages.message_id
             LEFT JOIN sources_player ON sources_player.message_id = messages.message_id
-            WHERE {} GROUP BY messages.message_id
+            WHERE {} GROUP BY messages.message_id {}
             "#,
-            restriction
+            restriction, limit
         ))
         .map(|row: PgRow| {
             let message_id: i64 = row.get("message_id");
@@ -232,10 +234,10 @@ RETURNING id
             let s_plugin = s_plugin.get(&f.0);
             let s_player = s_player.get(&f.0);
 
-            println!("ASS {:#?}", (a_server, a_player, s_plugin, s_player));
+            eprintln!("ASS {:#?}", (a_server, a_player, s_plugin, s_player));
 
             if a_server.is_some() && s_plugin.is_some() {
-                println!(">>> a");
+                eprintln!(">>> a");
 
                 let aud = MessageAudience::Servers(
                     a_server
@@ -264,7 +266,7 @@ RETURNING id
                     content: f.2.to_string(),
                 })
             } else if a_server.is_some() && s_player.is_some() {
-                println!(">>> b");
+                eprintln!(">>> b");
 
                 let aud = MessageAudience::Servers(
                     a_server
@@ -291,7 +293,7 @@ RETURNING id
                     content: f.2.to_string(),
                 })
             } else if a_player.is_some() && s_plugin.is_some() {
-                println!(">>> c");
+                eprintln!(">>> c");
 
                 let aud = MessageAudience::Players(
                     a_player
@@ -318,7 +320,7 @@ RETURNING id
                     content: f.2.to_string(),
                 })
             } else if a_player.is_some() && s_player.is_some() {
-                println!(">>> d");
+                eprintln!(">>> d");
 
                 let aud = MessageAudience::Players(
                     a_player
@@ -344,8 +346,6 @@ RETURNING id
                 })
             }
         }
-
-        println!("BAZZ >> {:#?}", res);
 
         txn.commit().await?;
 
