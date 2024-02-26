@@ -9,8 +9,8 @@ use tonic::{async_trait, Request, Response, Status};
 
 use crate::chatq;
 use crate::chatq::{
-    MessageBroadcast, MessageInsertRequest, MessageInsertResponse,
-    MessageListenRequest, QueryMessageResponse,
+    MessageBroadcast, MessageInsertRequest, MessageInsertResponse, MessageListenRequest,
+    QueryMessageResponse,
 };
 use crate::data::models::{EvaluableFilter, Message, MessageFilterPattern};
 

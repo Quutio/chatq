@@ -1,13 +1,11 @@
 pub mod data;
 
-use anyhow::Context;
 use chrono::NaiveDateTime;
-use data::models::*;
 use data::models::query::MessageQueryPattern;
+use data::models::*;
 use sqlx::postgres::PgRow;
 use sqlx::{PgPool, Row};
 use std::collections::HashMap;
-use uuid::Uuid;
 
 pub mod grpc;
 pub mod message_handler;
@@ -28,94 +26,43 @@ impl ChatQDao {
     pub async fn insert_message(&self, stub: MessageStub) -> anyhow::Result<Message> {
         let mut txn = self.pool.begin().await?;
 
-        let message_id = sqlx::query!(
-            r#"
-INSERT INTO messages (issued,content)
-VALUES ($1,$2)
-ON CONFLICT DO NOTHING
-RETURNING message_id
-            "#,
-            stub.timestamp,
-            stub.content,
-        )
-        .fetch_one(&mut txn)
-        .await
-        .context("insert message database failure")?
-        .message_id;
+        let audience = &stub.audience;
+        let padded: String = audience
+            .players()
+            .into_iter()
+            .map(|op| op.to_string())
+            .collect::<Vec<_>>()
+            .join("|")
+            .into();
+        let players = audience.players();
 
-        match &stub.audience {
-            MessageAudience::Players(players) => {
-                for player in players {
-                    sqlx::query!(
-                        r#"
-INSERT INTO audiences_player (player,message_id)
-VALUES ($1,$2)
-ON CONFLICT DO NOTHING
-RETURNING id
-                    "#,
-                        sqlx::types::Uuid::from_bytes(player.as_bytes().clone()),
-                        message_id
-                    )
-                    .fetch_one(&mut txn)
-                    .await?;
-                }
-            }
-            MessageAudience::Servers(servers) => {
-                for server in servers {
-                    sqlx::query!(
-                        r#"
-INSERT INTO audiences_server (server,message_id)
-VALUES ($1,$2)
-ON CONFLICT DO NOTHING
-RETURNING id
-                    "#,
-                        server.value,
-                        message_id
-                    )
-                    .fetch_one(&mut txn)
-                    .await?;
-                }
-            }
+        let audience_id = sqlx::query!(r#"INSERT INTO audiences (users,users_hash) VALUES ($1,MD5($2)) ON CONFLICT DO NOTHING RETURNING id"#, players, padded)
+            .fetch_one(&mut txn).await?.id;
+
+        let source_id = sqlx::query!(r#"INSERT INTO sources (uuid) VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid RETURNING id"#, stub.source.player())
+            .fetch_one(&mut txn).await?.id;
+
+        let source = &stub.audience;
+        for player in source.players() {
+            let source_id = sqlx::query!(r#"INSERT INTO sources (uuid) VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid RETURNING id"#, player)
+                .fetch_one(&mut txn).await?.id;
+            sqlx::query!(r#"INSERT INTO source_audiences (source_id,audience_id) VALUES ($1,$2) ON CONFLICT DO NOTHING"#, source_id,audience_id)
+                .execute(&mut txn).await?;
         }
 
-        match &stub.source {
-            MessageSource::Players(players) => {
-                for player in players {
-                    sqlx::query!(
-                        r#"
-INSERT INTO sources_player (player,message_id)
-VALUES ($1,$2)
-ON CONFLICT DO NOTHING
-RETURNING id
-                    "#,
-                        sqlx::types::Uuid::from_bytes(player.as_bytes().clone()),
-                        message_id
-                    )
-                    .fetch_one(&mut txn)
-                    .await?;
-                }
-            }
-            MessageSource::Plugins(plugins) => {
-                for plugin in plugins {
-                    sqlx::query!(
-                        r#"
-INSERT INTO sources_plugin (plugin,message_id)
-VALUES ($1,$2)
-ON CONFLICT DO NOTHING
-RETURNING id
-                    "#,
-                        plugin.value,
-                        message_id
-                    )
-                    .fetch_one(&mut txn)
-                    .await?;
-                }
-            }
-        }
+        let message_id = sqlx::query!(r#"INSERT INTO messages (issued,content,audience_id,source_id) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING id"#,
+            stub.timestamp, stub.content, audience_id, source_id,
+        ).fetch_one(&mut txn).await?.id;
 
         txn.commit().await?;
 
-        Ok(Message::from_stub(message_id, stub))
+        Ok(Message {
+            id: message_id,
+            timestamp: stub.timestamp,
+            source: stub.source,
+            audience: stub.audience,
+            content: stub.content,
+        })
     }
 
     pub async fn query_messages(
@@ -131,161 +78,77 @@ RETURNING id
             r#"
             SELECT messages.*
             FROM messages
-            LEFT JOIN audiences_server ON audiences_server.message_id = messages.message_id
-            LEFT JOIN audiences_player ON audiences_player.message_id = messages.message_id
-            LEFT JOIN sources_plugin ON sources_plugin.message_id = messages.message_id
-            LEFT JOIN sources_player ON sources_player.message_id = messages.message_id
-            WHERE {} GROUP BY messages.message_id {}
+            LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
+            LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
+            LEFT JOIN sources ON sources.id = messages.source_id
+            WHERE {} GROUP BY messages.id {}
             "#,
             restriction, limit
         ))
         .map(|row: PgRow| {
-            let message_id: i64 = row.get("message_id");
+            let message_id: i64 = row.get("id");
             let issued: NaiveDateTime = row.get("issued");
             let content: String = row.get("content");
+            let audience_id: i64 = row.get("audience_id");
+            let source_id: i64 = row.get("source_id");
 
-            (message_id, issued, content)
+            (message_id, issued, content, audience_id, source_id)
         })
         .fetch_all(&mut txn)
         .await?;
 
-        eprintln!("abcde\n\n{:?}\n\n", foo.len());
-
-        let mut a_server = HashMap::new();
-        let mut a_player = HashMap::new();
-        let mut s_plugin = HashMap::new();
-        let mut s_player = HashMap::new();
+        let mut audiences = HashMap::new();
+        let mut sources = HashMap::new();
 
         for f in &foo {
-            let bar = sqlx::query!(
-                r#"
-                SELECT * FROM audiences_server WHERE message_id = $1
-                "#,
-                f.0
-            )
-            .fetch_all(&mut txn)
-            .await?;
+            let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, f.3 as i32)
+                .fetch_one(&mut txn)
+                .await?;
 
-            for b in bar {
-                a_server
-                    .entry(f.0)
-                    .or_insert(Vec::new())
-                    .push((b.message_id, b.server))
-            }
+            audiences.insert(f.0, (bar.users, f.3));
         }
 
         for f in &foo {
             let bar = sqlx::query!(
                 r#"
-                SELECT * FROM audiences_player WHERE message_id = $1
+                SELECT * FROM sources WHERE id = $1
                 "#,
-                f.0
+                f.4 as i32
             )
-            .fetch_all(&mut txn)
+            .fetch_one(&mut txn)
             .await?;
 
-            for b in bar {
-                a_player
-                    .entry(f.0)
-                    .or_insert(Vec::new())
-                    .push((b.message_id, b.player))
-            }
-        }
-
-        for f in &foo {
-            let bar = sqlx::query!(
-                r#"
-                SELECT * FROM sources_plugin WHERE message_id = $1
-                "#,
-                f.0
-            )
-            .fetch_all(&mut txn)
-            .await?;
-
-            for b in bar {
-                s_plugin
-                    .entry(f.0)
-                    .or_insert(Vec::new())
-                    .push((b.message_id, b.plugin))
-            }
-        }
-
-        for f in &foo {
-            let bar = sqlx::query!(
-                r#"
-                SELECT * FROM sources_player WHERE message_id = $1
-                "#,
-                f.0
-            )
-            .fetch_all(&mut txn)
-            .await?;
-
-            for b in bar {
-                s_player
-                    .entry(f.0)
-                    .or_insert(Vec::new())
-                    .push((b.message_id, b.player))
-            }
+            sources.insert(f.0, (bar.uuid, f.4));
         }
 
         let mut res: Vec<Message> = Vec::new();
 
         for f in &foo {
-            let a_server = a_server.get(&f.0);
-            let a_player = a_player.get(&f.0);
-            let s_plugin = s_plugin.get(&f.0);
-            let s_player = s_player.get(&f.0);
+            let audiences = audiences.get(&f.0);
+            let sources = sources.get(&f.0);
 
             let aud: MessageAudience;
             let src: MessageSource;
 
-            if let Some(a_server) = a_server {
-                aud = MessageAudience::Servers(
-                    a_server
-                        .iter()
-                        .map(|op| Server {
-                            value: op.1.clone(),
-                        })
-                        .collect(),
-                    )
-            } else if let Some(a_player) = a_player {
-                aud = MessageAudience::Players(
-                    a_player
-                        .iter()
-                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
-                        .collect(),
-                    )
+            if let Some(audiences) = audiences {
+                aud = MessageAudience::new(audiences.0.clone());
             } else {
                 continue;
             }
 
-            if let Some(s_player) = s_player {
-                src = MessageSource::Players(
-                    s_player
-                        .iter()
-                        .map(|op| Uuid::from_bytes(*op.1.as_bytes()))
-                        .collect(),
-                )
-            } else if let Some(s_plugin) = s_plugin {
-                src = MessageSource::Plugins(
-                    s_plugin
-                        .iter()
-                        .map(|op| Plugin { value: op.1.to_string() })
-                        .collect(),
-                )
+            if let Some(source) = sources {
+                src = MessageSource::new(source.0.clone());
             } else {
                 continue;
             }
 
-            res.push(
-                Message {
-                    id: f.0,
-                    timestamp: f.1,
-                    source: src,
-                    audience: aud,
-                    content: f.2.to_string(),
-                }
-            )
+            res.push(Message {
+                id: f.0,
+                timestamp: f.1,
+                source: src,
+                audience: aud,
+                content: f.2.to_string(),
+            })
         }
 
         txn.commit().await?;

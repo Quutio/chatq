@@ -6,7 +6,6 @@ import "google/protobuf/timestamp.proto";
 package chatq;
 
 service MessageHandler {
-
     rpc InsertMessages (MessageInsertRequest) returns (MessageInsertResponse);
     rpc ListenMessages (MessageListenRequest) returns (stream MessageBroadcast);
     rpc QueryMessages (MessageQueryRequest) returns (QueryMessageResponse);
@@ -39,14 +38,12 @@ message Plugins {
 message MessageAudience {
     oneof audience {
         Uuids players = 1;
-        Servers server = 2;
     }
 }
 
 message MessageSource {
     oneof source {
-        Uuids players = 1;
-        Plugins plugins = 2;
+        Uuid player = 1;
     }
 }
 
@@ -104,17 +101,11 @@ message MessageFilterPattern {
         }
 
         message AudienceFilter {
-            oneof condition {
-                Uuid player = 1;
-                Server server = 2;
-            }
+            Uuid player = 1;
         }
 
         message SourceFilter {
-            oneof condition {
-                Uuid player = 1;
-                Plugin plugin = 2;
-            }
+            Uuid player = 1;
         }
 
         oneof condition {

@@ -11,8 +11,7 @@ extern crate log;
 pub async fn main() {
     dotenv().ok();
 
-    env_logger::builder()
-        .init();
+    env_logger::builder().init();
 
     let db_url = &dotenv::var("DATABASE_URL").unwrap();
 

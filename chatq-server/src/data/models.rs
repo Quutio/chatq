@@ -3,8 +3,8 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 use chrono::NaiveDateTime;
+use sqlx::types::uuid::Uuid;
 use thiserror::Error;
-use uuid::Uuid;
 
 use crate::chatq;
 use crate::chatq::message_filter_pattern;
@@ -39,15 +39,31 @@ impl Plugin {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum MessageAudience {
-    Players(Vec<Uuid>),
-    Servers(Vec<Server>),
+pub struct MessageAudience {
+    players: Vec<Uuid>,
+}
+
+impl MessageAudience {
+    pub fn new(players: Vec<Uuid>) -> Self {
+        Self { players }
+    }
+    pub fn players(&self) -> &Vec<Uuid> {
+        &self.players
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum MessageSource {
-    Players(Vec<Uuid>),
-    Plugins(Vec<Plugin>),
+pub struct MessageSource {
+    player: Uuid,
+}
+
+impl MessageSource {
+    pub fn new(player: Uuid) -> Self {
+        Self { player }
+    }
+    pub fn player(&self) -> &Uuid {
+        &self.player
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -117,17 +133,13 @@ impl Display for TimestampFilter {
 #[derive(Debug, Clone, PartialEq)]
 pub enum AudienceFilter {
     Uuid(Uuid),
-    Server(Server),
 }
 
 impl Display for AudienceFilter {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             AudienceFilter::Uuid(uuid) => {
-                write!(f, "audiences_player.player = \'{}\'", uuid)
-            }
-            AudienceFilter::Server(server) => {
-                write!(f, "audiences_server.server = \'{}\'", server.value)
+                write!(f, "audience_sources.uuid = \'{}\'", uuid)
             }
         }
     }
@@ -136,17 +148,13 @@ impl Display for AudienceFilter {
 #[derive(Debug, Clone, PartialEq)]
 pub enum SourceFilter {
     Uuid(Uuid),
-    Plugin(Plugin),
 }
 
 impl Display for SourceFilter {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             SourceFilter::Uuid(uuid) => {
-                write!(f, "sources_player.player = \'{}\'", uuid)
-            }
-            SourceFilter::Plugin(plugin) => {
-                write!(f, "sources_plugin.plugin = \'{}\'", plugin.value)
+                write!(f, "sources.uuid = \'{}\'", uuid)
             }
         }
     }
@@ -155,14 +163,7 @@ impl Display for SourceFilter {
 impl EvaluableFilter for AudienceFilter {
     fn evaluate(&self, message: &Message) -> bool {
         match self {
-            AudienceFilter::Uuid(uuid) => match &message.audience {
-                MessageAudience::Players(players) => players.contains(uuid),
-                MessageAudience::Servers(_) => false,
-            },
-            AudienceFilter::Server(server) => match &message.audience {
-                MessageAudience::Players(_) => false,
-                MessageAudience::Servers(servers) => servers.contains(server),
-            },
+            AudienceFilter::Uuid(uuid) => message.audience.players.contains(uuid),
         }
     }
 }
@@ -170,14 +171,7 @@ impl EvaluableFilter for AudienceFilter {
 impl EvaluableFilter for SourceFilter {
     fn evaluate(&self, message: &Message) -> bool {
         match self {
-            SourceFilter::Uuid(uuid) => match &message.source {
-                MessageSource::Players(players) => players.contains(uuid),
-                MessageSource::Plugins(_) => false,
-            },
-            SourceFilter::Plugin(plugin) => match &message.source {
-                MessageSource::Players(_) => false,
-                MessageSource::Plugins(plugins) => plugins.contains(plugin),
-            },
+            SourceFilter::Uuid(uuid) => message.source.player == *uuid,
         }
     }
 }
@@ -374,7 +368,7 @@ pub mod query {
         fn from(value: MessageQueryPattern) -> Self {
             Self {
                 limit: Some(value.limit.into()),
-                filter: Some(value.filter.into())
+                filter: Some(value.filter.into()),
             }
         }
     }
@@ -384,8 +378,14 @@ pub mod query {
 
         fn try_from(value: chatq::MessageQueryPattern) -> Result<Self, Self::Error> {
             Ok(Self {
-                limit: value.limit.ok_or(ModelConversionError::ValueNotProvided("limit"))?.try_into()?,
-                filter: value.filter.ok_or(ModelConversionError::ValueNotProvided("limit"))?.try_into()?
+                limit: value
+                    .limit
+                    .ok_or(ModelConversionError::ValueNotProvided("limit"))?
+                    .try_into()?,
+                filter: value
+                    .filter
+                    .ok_or(ModelConversionError::ValueNotProvided("limit"))?
+                    .try_into()?,
             })
         }
     }
@@ -420,7 +420,7 @@ pub enum ModelConversionError {
     #[error("Inner value was not provided")]
     ValueNotProvided(&'static str),
     #[error("uuid conversion failure")]
-    UuidConversion(#[from] uuid::Error),
+    UuidConversion(#[from] sqlx::types::uuid::Error),
 }
 
 impl TryFrom<chatq::MessageAudience> for MessageAudience {
@@ -431,7 +431,7 @@ impl TryFrom<chatq::MessageAudience> for MessageAudience {
             .audience
             .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
         {
-            chatq::message_audience::Audience::Players(players) => Ok(MessageAudience::Players(
+            chatq::message_audience::Audience::Players(players) => Ok(MessageAudience::new(
                 players
                     .uuids
                     .into_iter()
@@ -439,38 +439,22 @@ impl TryFrom<chatq::MessageAudience> for MessageAudience {
                     .collect::<Result<_, _>>()
                     .map_err(|err| ModelConversionError::UuidConversion(err))?,
             )),
-            chatq::message_audience::Audience::Server(servers) => Ok(MessageAudience::Servers(
-                servers
-                    .servers
-                    .into_iter()
-                    .map(|x| x.into())
-                    .collect::<Vec<Server>>(),
-            )),
         }
     }
 }
 
 impl From<MessageAudience> for chatq::MessageAudience {
     fn from(f: MessageAudience) -> Self {
-        match f {
-            MessageAudience::Players(players) => Self {
-                audience: Some(chatq::message_audience::Audience::Players(chatq::Uuids {
-                    uuids: players
-                        .into_iter()
-                        .map(|x| chatq::Uuid {
-                            value: x.to_string(),
-                        })
-                        .collect::<Vec<chatq::Uuid>>(),
-                })),
-            },
-            MessageAudience::Servers(servers) => Self {
-                audience: Some(chatq::message_audience::Audience::Server(chatq::Servers {
-                    servers: servers
-                        .into_iter()
-                        .map(|x| x.into())
-                        .collect::<Vec<chatq::Server>>(),
-                })),
-            },
+        Self {
+            audience: Some(chatq::message_audience::Audience::Players(chatq::Uuids {
+                uuids: f
+                    .players
+                    .into_iter()
+                    .map(|x| chatq::Uuid {
+                        value: x.to_string(),
+                    })
+                    .collect::<Vec<chatq::Uuid>>(),
+            })),
         }
     }
 }
@@ -483,45 +467,19 @@ impl TryFrom<chatq::MessageSource> for MessageSource {
             .source
             .ok_or_else(|| ModelConversionError::ValueNotProvided("source"))?
         {
-            chatq::message_source::Source::Players(players) => Ok(MessageSource::Players(
-                players
-                    .uuids
-                    .into_iter()
-                    .map(|x| Uuid::from_str(&x.value))
-                    .collect::<Result<_, _>>()?,
-            )),
-            chatq::message_source::Source::Plugins(plugins) => Ok(MessageSource::Plugins(
-                plugins
-                    .plugins
-                    .into_iter()
-                    .map(|x| x.into())
-                    .collect::<Vec<Plugin>>(),
-            )),
+            chatq::message_source::Source::Player(player) => {
+                Ok(MessageSource::new(Uuid::parse_str(&player.value)?))
+            }
         }
     }
 }
 
 impl From<MessageSource> for chatq::MessageSource {
     fn from(f: MessageSource) -> Self {
-        match f {
-            MessageSource::Players(players) => chatq::MessageSource {
-                source: Some(chatq::message_source::Source::Players(chatq::Uuids {
-                    uuids: players
-                        .into_iter()
-                        .map(|x| chatq::Uuid {
-                            value: x.to_string(),
-                        })
-                        .collect::<Vec<chatq::Uuid>>(),
-                })),
-            },
-            MessageSource::Plugins(plugins) => chatq::MessageSource {
-                source: Some(chatq::message_source::Source::Plugins(chatq::Plugins {
-                    plugins: plugins
-                        .into_iter()
-                        .map(|x| chatq::Plugin { value: x.value })
-                        .collect::<Vec<chatq::Plugin>>(),
-                })),
-            },
+        chatq::MessageSource {
+            source: Some(chatq::message_source::Source::Player(chatq::Uuid {
+                value: f.player.to_string(),
+            })),
         }
     }
 }
@@ -544,7 +502,7 @@ impl TryFrom<chatq::Message> for Message {
                 .try_into()?,
             audience: f
                 .audience
-                .ok_or_else(|| ModelConversionError::ValueNotProvided("audince"))?
+                .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
                 .try_into()?,
             content: f.content,
         })
@@ -605,10 +563,10 @@ impl From<MessageStub> for chatq::MessageStub {
 }
 
 impl TryFrom<chatq::Uuid> for Uuid {
-    type Error = uuid::Error;
+    type Error = sqlx::types::uuid::Error;
 
     fn try_from(value: chatq::Uuid) -> Result<Self, Self::Error> {
-        Uuid::from_str(&value.value)
+        Uuid::parse_str(&value.value)
     }
 }
 
@@ -695,13 +653,10 @@ impl TryFrom<chatq::message_filter_pattern::message_filter::TimestampFilter> for
 impl From<AudienceFilter> for chatq::message_filter_pattern::message_filter::AudienceFilter {
     fn from(value: AudienceFilter) -> Self {
         Self {
-            condition: Some(match value {
-                AudienceFilter::Uuid(uuid) => {
-                    message_filter::audience_filter::Condition::Player(uuid.into())
-                }
-                AudienceFilter::Server(server) => {
-                    message_filter::audience_filter::Condition::Server(server.into())
-                }
+            player: Some(match value {
+                AudienceFilter::Uuid(uuid) => chatq::Uuid {
+                    value: uuid.to_string(),
+                },
             }),
         }
     }
@@ -711,30 +666,23 @@ impl TryFrom<chatq::message_filter_pattern::message_filter::AudienceFilter> for 
     type Error = ModelConversionError;
 
     fn try_from(value: message_filter::AudienceFilter) -> Result<Self, Self::Error> {
-        match value
-            .condition
-            .ok_or_else(|| ModelConversionError::ValueNotProvided("condition"))?
-        {
-            message_filter::audience_filter::Condition::Player(player) => {
-                Ok(Self::Uuid(player.try_into()?))
-            }
-            message_filter::audience_filter::Condition::Server(server) => {
-                Ok(Self::Server(server.into()))
-            }
-        }
+        let player = value
+            .player
+            .map(|op| {
+                Uuid::from_str(&op.value).map_err(|err| ModelConversionError::UuidConversion(err))
+            })
+            .ok_or(ModelConversionError::ValueNotProvided("player"))??;
+        Ok(AudienceFilter::Uuid(player))
     }
 }
 
 impl From<SourceFilter> for chatq::message_filter_pattern::message_filter::SourceFilter {
     fn from(value: SourceFilter) -> Self {
         Self {
-            condition: Some(match value {
-                SourceFilter::Uuid(uuid) => {
-                    message_filter::source_filter::Condition::Player(uuid.into())
-                }
-                SourceFilter::Plugin(plugin) => {
-                    message_filter::source_filter::Condition::Plugin(plugin.into())
-                }
+            player: Some(match value {
+                SourceFilter::Uuid(uuid) => chatq::Uuid {
+                    value: uuid.to_string(),
+                },
             }),
         }
     }
@@ -744,17 +692,13 @@ impl TryFrom<chatq::message_filter_pattern::message_filter::SourceFilter> for So
     type Error = ModelConversionError;
 
     fn try_from(value: message_filter::SourceFilter) -> Result<Self, Self::Error> {
-        match value
-            .condition
-            .ok_or_else(|| ModelConversionError::ValueNotProvided("condition"))?
-        {
-            message_filter::source_filter::Condition::Player(player) => {
-                Ok(Self::Uuid(player.try_into()?))
-            }
-            message_filter::source_filter::Condition::Plugin(plugin) => {
-                Ok(Self::Plugin(plugin.into()))
-            }
-        }
+        let player = value
+            .player
+            .map(|op| {
+                Uuid::from_str(&op.value).map_err(|err| ModelConversionError::UuidConversion(err))
+            })
+            .ok_or(ModelConversionError::ValueNotProvided("player"))??;
+        Ok(SourceFilter::Uuid(player))
     }
 }
 
@@ -926,59 +870,33 @@ mod tests {
         MessageFilter, MessageFilterPattern, MessageSource, Plugin, SourceFilter,
     };
     use chrono::Utc;
-    use uuid::Uuid;
+    use sqlx::types::Uuid;
 
     #[test]
     fn filters() {
-        let data = vec![
-            Message {
-                id: 0,
-                timestamp: Utc::now().naive_utc(),
-                source: MessageSource::Players(vec![
-                    Uuid::from_u128(1),
-                    Uuid::from_u128(2),
-                    Uuid::from_u128(3),
-                ]),
-                audience: MessageAudience::Players(vec![
-                    Uuid::from_u128(4),
-                    Uuid::from_u128(5),
-                    Uuid::from_u128(6),
-                ]),
-                content: "test2".to_string(),
-            },
-            Message {
-                id: 0,
-                timestamp: Utc::now().naive_utc(),
-                source: MessageSource::Plugins(vec![
-                    Plugin {
-                        value: "qkernel".to_string(),
-                    },
-                    Plugin {
-                        value: "reportas".to_string(),
-                    },
-                ]),
-                audience: MessageAudience::Players(vec![
-                    Uuid::from_u128(4),
-                    Uuid::from_u128(7),
-                    Uuid::from_u128(8),
-                ]),
-                content: "test1".to_string(),
-            },
-        ];
+        let data = vec![Message {
+            id: 0,
+            timestamp: Utc::now().naive_utc(),
+            source: MessageSource::new(Uuid::from_u128(1)),
+            audience: MessageAudience::new(vec![
+                Uuid::from_u128(4),
+                Uuid::from_u128(5),
+                Uuid::from_u128(6),
+            ]),
+            content: "test2".to_string(),
+        }];
 
-        let filter = MessageFilterPattern::Composite(CompositeFilter::Or(vec![
-            FilterItem::Composite(CompositeFilter::And(vec![
-                FilterItem::Single(MessageFilter::Audience(AudienceFilter::Uuid(
-                    Uuid::from_u128(4),
-                ))),
-                FilterItem::Single(MessageFilter::Audience(AudienceFilter::Uuid(
-                    Uuid::from_u128(10),
-                ))),
-            ])),
-            FilterItem::Single(MessageFilter::Source(SourceFilter::Plugin(Plugin {
-                value: "qkernel".to_string(),
-            }))),
-        ]));
+        let filter =
+            MessageFilterPattern::Composite(CompositeFilter::Or(vec![FilterItem::Composite(
+                CompositeFilter::And(vec![
+                    FilterItem::Single(MessageFilter::Audience(AudienceFilter::Uuid(
+                        Uuid::from_u128(4),
+                    ))),
+                    FilterItem::Single(MessageFilter::Audience(AudienceFilter::Uuid(
+                        Uuid::from_u128(10),
+                    ))),
+                ]),
+            )]));
 
         println!("{:#?}", filter);
         println!("{}", filter);
