@@ -73,6 +73,7 @@ pub struct Message {
     pub source: MessageSource,
     pub audience: MessageAudience,
     pub content: String,
+    pub context: String,
 }
 
 impl Message {
@@ -83,6 +84,7 @@ impl Message {
             source: stub.source,
             audience: stub.audience,
             content: stub.content,
+            context: stub.context,
         }
     }
 }
@@ -93,6 +95,7 @@ pub struct MessageStub {
     pub source: MessageSource,
     pub audience: MessageAudience,
     pub content: String,
+    pub context: String,
 }
 
 pub trait EvaluableFilter {
@@ -160,6 +163,21 @@ impl Display for SourceFilter {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum ContextFilter {
+    Context(String),
+}
+
+impl Display for ContextFilter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ContextFilter::Context(context) => {
+                write!(f, "messages.context = \'{}\'", context)
+            }
+        }
+    }
+}
+
 impl EvaluableFilter for AudienceFilter {
     fn evaluate(&self, message: &Message) -> bool {
         match self {
@@ -188,11 +206,22 @@ impl EvaluableFilter for TimestampFilter {
     }
 }
 
+impl EvaluableFilter for ContextFilter {
+    fn evaluate(&self, message: &Message) -> bool {
+        match self {
+            ContextFilter::Context(context) => {
+                *context == message.content
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageFilter {
     InsertTimestamp(TimestampFilter),
     Audience(AudienceFilter),
     Source(SourceFilter),
+    Context(ContextFilter),
 }
 
 impl Display for MessageFilter {
@@ -207,6 +236,9 @@ impl Display for MessageFilter {
             MessageFilter::Source(source) => {
                 write!(f, "{}", source)
             }
+            MessageFilter::Context(context) => {
+                write!(f, "{}", context)
+            }
         }
     }
 }
@@ -217,6 +249,7 @@ impl EvaluableFilter for MessageFilter {
             MessageFilter::InsertTimestamp(filter) => filter.evaluate(message),
             MessageFilter::Audience(filter) => filter.evaluate(message),
             MessageFilter::Source(filter) => filter.evaluate(message),
+            MessageFilter::Context(filter) => filter.evaluate(message),
         }
     }
 }
@@ -505,6 +538,7 @@ impl TryFrom<chatq::Message> for Message {
                 .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
                 .try_into()?,
             content: f.content,
+            context: f.context
         })
     }
 }
@@ -520,6 +554,7 @@ impl From<Message> for chatq::Message {
             source: Some(f.source.into()),
             audience: Some(f.audience.into()),
             content: f.content,
+            context: f.context,
         }
     }
 }
@@ -544,6 +579,7 @@ impl TryFrom<chatq::MessageStub> for MessageStub {
                 .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
                 .try_into()?,
             content: f.content,
+            context: f.context
         })
     }
 }
@@ -558,6 +594,7 @@ impl From<MessageStub> for chatq::MessageStub {
             source: Some(f.source.into()),
             audience: Some(f.audience.into()),
             content: f.content,
+            context: f.context
         }
     }
 }
@@ -702,6 +739,26 @@ impl TryFrom<chatq::message_filter_pattern::message_filter::SourceFilter> for So
     }
 }
 
+impl From<ContextFilter> for chatq::message_filter_pattern::message_filter::ContextFilter {
+    fn from(value: ContextFilter) -> Self {
+        Self {
+            context: match value {
+                ContextFilter::Context(context) => {
+                    context
+                }
+            },
+        }
+    }
+}
+
+impl TryFrom<chatq::message_filter_pattern::message_filter::ContextFilter> for ContextFilter {
+    type Error = ModelConversionError;
+
+    fn try_from(value: message_filter::ContextFilter) -> Result<Self, Self::Error> {
+        Ok(ContextFilter::Context(value.context))
+    }
+}
+
 impl From<CompositeFilter> for chatq::message_filter_pattern::CompositeFilter {
     fn from(value: CompositeFilter) -> Self {
         match value {
@@ -743,6 +800,11 @@ impl From<MessageFilter> for chatq::message_filter_pattern::MessageFilter {
                     chatq::message_filter_pattern::message_filter::Condition::Source(source.into()),
                 ),
             },
+            MessageFilter::Context(context) => message_filter_pattern::MessageFilter {
+                condition: Some(
+                    chatq::message_filter_pattern::message_filter::Condition::Context(context.into()),
+                )
+            }
         }
     }
 }
@@ -763,6 +825,9 @@ impl TryFrom<chatq::message_filter_pattern::MessageFilter> for MessageFilter {
             }
             message_filter_pattern::message_filter::Condition::Source(source) => {
                 Ok(Self::Source(source.try_into()?))
+            }
+            message_filter_pattern::message_filter::Condition::Context(context) => {
+                Ok(Self::Context(context.try_into()?))
             }
         }
     }
@@ -884,6 +949,7 @@ mod tests {
                 Uuid::from_u128(6),
             ]),
             content: "test2".to_string(),
+            context: "msg".to_string(),
         }];
 
         let filter =

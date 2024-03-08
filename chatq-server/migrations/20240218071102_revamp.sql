@@ -25,6 +25,7 @@ CREATE TABLE messages
     id          BIGSERIAL PRIMARY KEY,
     issued      TIMESTAMP NOT NULL,
     content     TEXT      NOT NULL,
+    context     TEXT      NOT NULL,
     audience_id bigint REFERENCES audiences (id),
     source_id   bigint REFERENCES sources (id)
 );

@@ -53,6 +53,7 @@ message Message {
     MessageSource source = 3;
     MessageAudience audience = 4;
     string content = 5;
+    string context = 6;
 }
 
 message QueryMessageResponse {
@@ -68,6 +69,7 @@ message MessageStub {
     MessageSource source = 2;
     MessageAudience audience = 3;
     string content = 4;
+    string context = 5;
 }
 
 message MessageInsertRequest {
@@ -108,10 +110,15 @@ message MessageFilterPattern {
             Uuid player = 1;
         }
 
+        message ContextFilter {
+            string context = 1;
+        }
+
         oneof condition {
             TimestampFilter insert_timestamp = 1;
             AudienceFilter audience = 2;
             SourceFilter source = 3;
+            ContextFilter context = 4;
         }
     }
 

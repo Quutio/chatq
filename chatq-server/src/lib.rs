@@ -50,8 +50,8 @@ impl ChatQDao {
                 .execute(&mut txn).await?;
         }
 
-        let message_id = sqlx::query!(r#"INSERT INTO messages (issued,content,audience_id,source_id) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING id"#,
-            stub.timestamp, stub.content, audience_id, source_id,
+        let message_id = sqlx::query!(r#"INSERT INTO messages (issued,content,audience_id,source_id,context) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING RETURNING id"#,
+            stub.timestamp, stub.content, audience_id, source_id, stub.context
         ).fetch_one(&mut txn).await?.id;
 
         txn.commit().await?;
@@ -62,6 +62,7 @@ impl ChatQDao {
             source: stub.source,
             audience: stub.audience,
             content: stub.content,
+            context: stub.context,
         })
     }
 
@@ -91,8 +92,9 @@ impl ChatQDao {
             let content: String = row.get("content");
             let audience_id: i64 = row.get("audience_id");
             let source_id: i64 = row.get("source_id");
+            let context: String = row.get("context");
 
-            (message_id, issued, content, audience_id, source_id)
+            (message_id, issued, content, audience_id, source_id, context)
         })
         .fetch_all(&mut txn)
         .await?;
@@ -148,6 +150,7 @@ impl ChatQDao {
                 source: src,
                 audience: aud,
                 content: f.2.to_string(),
+                context: f.5.to_string()
             })
         }
 
