@@ -7,20 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Progress types.">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Make server impl use common proto-types.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/build.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/data/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/data/models.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/build.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/proto/chatq.proto" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -122,7 +111,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1710031116297</updated>
-      <workItem from="1710031117307" duration="7356000" />
+      <workItem from="1710031117307" duration="8687000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -148,7 +137,15 @@
       <option name="project" value="LOCAL" />
       <updated>1710040707074</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Make server impl use common proto-types.">
+      <option name="closed" value="true" />
+      <created>1710054335895</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1710054335895</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -158,6 +155,7 @@
     <MESSAGE value="Rename things" />
     <MESSAGE value="Restructure parts" />
     <MESSAGE value="Progress types." />
-    <option name="LAST_COMMIT_MESSAGE" value="Progress types." />
+    <MESSAGE value="Make server impl use common proto-types." />
+    <option name="LAST_COMMIT_MESSAGE" value="Make server impl use common proto-types." />
   </component>
 </project>
