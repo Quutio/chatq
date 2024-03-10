@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
 use sqlx::types::uuid::Uuid;
 use thiserror::Error;
 
@@ -12,7 +13,7 @@ use crate::chatq::message_filter_pattern::composite_filter::filter_item::Type;
 use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
 use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Server {
     pub value: String,
 }
@@ -25,7 +26,7 @@ impl Server {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Plugin {
     pub value: String,
 }
@@ -38,7 +39,7 @@ impl Plugin {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct MessageAudience {
     players: Vec<Uuid>,
 }
@@ -52,7 +53,7 @@ impl MessageAudience {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct MessageSource {
     player: Uuid,
 }
@@ -66,7 +67,7 @@ impl MessageSource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Message {
     pub id: i64,
     pub timestamp: NaiveDateTime,
@@ -89,7 +90,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct MessageStub {
     pub timestamp: NaiveDateTime,
     pub source: MessageSource,
@@ -102,7 +103,7 @@ pub trait EvaluableFilter {
     fn evaluate(&self, message: &Message) -> bool;
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum TimestampFilter {
     Equals(NaiveDateTime),
     GreaterThan(NaiveDateTime),
@@ -133,9 +134,9 @@ impl Display for TimestampFilter {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum AudienceFilter {
-    Uuid(Uuid),
+    Uuid(uuid::Uuid),
 }
 
 impl Display for AudienceFilter {
@@ -148,7 +149,7 @@ impl Display for AudienceFilter {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum SourceFilter {
     Uuid(Uuid),
 }
@@ -163,7 +164,7 @@ impl Display for SourceFilter {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum ContextFilter {
     Context(String),
 }
@@ -216,7 +217,7 @@ impl EvaluableFilter for ContextFilter {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum MessageFilter {
     InsertTimestamp(TimestampFilter),
     Audience(AudienceFilter),
@@ -263,7 +264,7 @@ impl EvaluableFilter for FilterItem {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum CompositeFilter {
     Or(Vec<FilterItem>),
     And(Vec<FilterItem>),
@@ -310,7 +311,7 @@ impl EvaluableFilter for CompositeFilter {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum FilterItem {
     Single(MessageFilter),
     Composite(CompositeFilter),
@@ -325,7 +326,7 @@ impl Display for FilterItem {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum MessageFilterPattern {
     Single(MessageFilter),
     Composite(CompositeFilter),
@@ -351,12 +352,13 @@ impl EvaluableFilter for MessageFilterPattern {
 
 pub mod query {
     use std::fmt::Display;
+    use serde::{Deserialize, Serialize};
 
     use crate::chatq;
 
     use super::{MessageFilterPattern, ModelConversionError};
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub enum Limit {
         All,
         Amount(i32),
@@ -391,7 +393,7 @@ pub mod query {
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub struct MessageQueryPattern {
         pub limit: Limit,
         pub filter: MessageFilterPattern,
@@ -448,7 +450,7 @@ impl From<Plugin> for chatq::Plugin {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ModelConversionError {
     #[error("Inner value was not provided")]
     ValueNotProvided(&'static str),

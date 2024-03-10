@@ -7,9 +7,15 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Make server impl use common proto-types.">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Remove unnecessary indirect protos">
+      <change afterPath="$PROJECT_DIR$/chatq-gateway/build.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/proto/chatq.proto" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-gateway/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/lib.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -111,7 +117,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1710031116297</updated>
-      <workItem from="1710031117307" duration="8687000" />
+      <workItem from="1710031117307" duration="10189000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -145,7 +151,15 @@
       <option name="project" value="LOCAL" />
       <updated>1710054335895</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Remove unnecessary indirect protos">
+      <option name="closed" value="true" />
+      <created>1710055587452</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1710055587452</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -156,6 +170,7 @@
     <MESSAGE value="Restructure parts" />
     <MESSAGE value="Progress types." />
     <MESSAGE value="Make server impl use common proto-types." />
-    <option name="LAST_COMMIT_MESSAGE" value="Make server impl use common proto-types." />
+    <MESSAGE value="Remove unnecessary indirect protos" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove unnecessary indirect protos" />
   </component>
 </project>
