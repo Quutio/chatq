@@ -6,3 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+prost = "0.9"
+prost-types = "0.9"
+thiserror = "1.0.57"
+tonic = "0.6"
+
+chrono = "0.4.35"
+sqlx = { version = "0.7.3", features = [ "runtime-tokio-rustls", "postgres", "chrono", "uuid" ] }
+tokio = { version = "1.36.0", features = ["full"] }
+
+
+[build-dependencies]
+tonic-build = "0.6"
