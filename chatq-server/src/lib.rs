@@ -1,136 +1,161 @@
 pub mod data;
-pub mod entity;
 
-use sea_orm::{ActiveModelTrait, EntityTrait};
-use sqlx::PgPool;
-
-use std::{time::Duration};
-
-use entity::prelude::*;
-
-use sea_orm::{ConnectOptions, Database, DatabaseConnection, Set};
+use chrono::NaiveDateTime;
+use data::models::query::MessageQueryPattern;
 use data::models::*;
+use sqlx::postgres::PgRow;
+use sqlx::{PgPool, Row};
+use std::collections::HashMap;
+
+pub mod grpc;
+pub mod message_handler;
 
 pub mod chatq {
     tonic::include_proto!("chatq");
 }
 
-#[tonic::async_trait]
-pub trait Db {
-    async fn insert_message(&self, stub: MessageStub) -> Result<Message, Box<dyn std::error::Error>>;
+pub struct ChatQDao {
+    pub pool: PgPool,
 }
 
-pub struct ChatQDb {
-    db: DatabaseConnection,
-}
-
-impl ChatQDb {
-    pub async fn new(addr: &str) -> anyhow::Result<Self> {
-        let mut opt = ConnectOptions::new(addr.to_owned());
-        opt.max_connections(100)
-            .min_connections(5)
-            .idle_timeout(Duration::from_secs(8))
-            .sqlx_logging(true);
-
-        {
-            let sqlx_pool = PgPool::connect(addr).await?;
-            sqlx::migrate!().run(&sqlx_pool).await?
-        }
-
-        let db = Database::connect(opt).await?;
-
-        Ok(ChatQDb { db })
+impl ChatQDao {
+    pub fn with_pool(pool: PgPool) -> Self {
+        ChatQDao { pool }
     }
-}
 
-#[tonic::async_trait]
-impl Db for ChatQDb {
-    async fn insert_message(&self, stub: MessageStub) -> Result<Message, Box<dyn std::error::Error>> {
+    pub async fn insert_message(&self, stub: MessageStub) -> anyhow::Result<Message> {
+        let mut txn = self.pool.begin().await?;
 
-        let stub_c = stub.clone();
+        let audience = &stub.audience;
+        let padded: String = audience
+            .players()
+            .into_iter()
+            .map(|op| op.to_string())
+            .collect::<Vec<_>>()
+            .join("|")
+            .into();
+        let players = audience.players();
 
-        let mesg = entity::messages::ActiveModel {
-            issued: Set(stub.timestamp),
-            content: Set(stub.content),
-            ..Default::default()
-        };
+        let audience_id = sqlx::query!(r#"INSERT INTO audiences (users,users_hash) VALUES ($1,MD5($2)) ON CONFLICT DO NOTHING RETURNING id"#, players, padded)
+            .fetch_one(&mut txn).await?.id;
 
-        let mesg = mesg.insert(&self.db).await?;
+        let source_id = sqlx::query!(r#"INSERT INTO sources (uuid) VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid RETURNING id"#, stub.source.player())
+            .fetch_one(&mut txn).await?.id;
 
-        let message_id = mesg.message_id.unwrap();
-
-        match stub.audience {
-            MessageAudience::Players(players) => {
-
-                let mut auds: Vec<entity::audiences_player::ActiveModel> = Vec::new();
-
-                for uuid in players {
-                    let aud = entity::audiences_player::ActiveModel {
-                        player: Set(uuid),
-                        message_id: Set(message_id),
-                        ..Default::default()
-                    };
-
-                    auds.push(aud);
-                }
-
-                AudiencesPlayer::insert_many(auds).exec(&self.db).await?;
-            },
-            MessageAudience::Servers(servers) => {
-
-                let mut auds: Vec<entity::audiences_server::ActiveModel> = Vec::new();
-
-                for server in servers {
-                    let aud = entity::audiences_server::ActiveModel {
-                        server: Set(server.value),
-                        message_id: Set(message_id),
-                        ..Default::default()
-                    };
-
-                    auds.push(aud);
-                }
-
-                AudiencesServer::insert_many(auds).exec(&self.db).await?;
-            },
+        let source = &stub.audience;
+        for player in source.players() {
+            let source_id = sqlx::query!(r#"INSERT INTO sources (uuid) VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid RETURNING id"#, player)
+                .fetch_one(&mut txn).await?.id;
+            sqlx::query!(r#"INSERT INTO source_audiences (source_id,audience_id) VALUES ($1,$2) ON CONFLICT DO NOTHING"#, source_id,audience_id)
+                .execute(&mut txn).await?;
         }
 
-        match stub.source {
-            MessageSource::Players(players) => {
+        let message_id = sqlx::query!(r#"INSERT INTO messages (issued,content,audience_id,source_id,context) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING RETURNING id"#,
+            stub.timestamp, stub.content, audience_id, source_id, stub.context
+        ).fetch_one(&mut txn).await?.id;
 
-                let mut srcs: Vec<entity::sources_player::ActiveModel> = Vec::new();
+        txn.commit().await?;
 
-                for uuid in players {
-                    let src = entity::sources_player::ActiveModel {
-                        player: Set(uuid),
-                        message_id: Set(message_id),
-                        ..Default::default()
-                    };
+        Ok(Message {
+            id: message_id,
+            timestamp: stub.timestamp,
+            source: stub.source,
+            audience: stub.audience,
+            content: stub.content,
+            context: stub.context,
+        })
+    }
 
-                    srcs.push(src);
-                }
+    pub async fn query_messages(
+        &self,
+        query: &MessageQueryPattern,
+    ) -> anyhow::Result<Vec<Message>> {
+        let mut txn = self.pool.begin().await?;
 
-                SourcesPlayer::insert_many(srcs).exec(&self.db).await?;
-            },
-            MessageSource::Plugins(plugins) => {
+        let restriction = query.filter.to_string();
+        let limit = query.limit.to_string();
 
-                let mut srcs: Vec<entity::sources_plugin::ActiveModel> = Vec::new();
+        let foo = sqlx::query(&format!(
+            r#"
+            SELECT messages.*
+            FROM messages
+            LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
+            LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
+            LEFT JOIN sources ON sources.id = messages.source_id
+            WHERE {} GROUP BY messages.id {}
+            "#,
+            restriction, limit
+        ))
+        .map(|row: PgRow| {
+            let message_id: i64 = row.get("id");
+            let issued: NaiveDateTime = row.get("issued");
+            let content: String = row.get("content");
+            let audience_id: i64 = row.get("audience_id");
+            let source_id: i64 = row.get("source_id");
+            let context: String = row.get("context");
 
-                for plugin in plugins {
-                    let src = entity::sources_plugin::ActiveModel {
-                        plugin: Set(plugin.value),
-                        message_id: Set(message_id),
-                        ..Default::default()
-                    };
+            (message_id, issued, content, audience_id, source_id, context)
+        })
+        .fetch_all(&mut txn)
+        .await?;
 
-                    srcs.push(src);
-                }
+        let mut audiences = HashMap::new();
+        let mut sources = HashMap::new();
 
-                SourcesPlugin::insert_many(srcs).exec(&self.db).await?;
-            },
+        for f in &foo {
+            let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, f.3 as i32)
+                .fetch_one(&mut txn)
+                .await?;
+
+            audiences.insert(f.0, (bar.users, f.3));
         }
 
-        let mesg = Message::from_stub(message_id, stub_c);
+        for f in &foo {
+            let bar = sqlx::query!(
+                r#"
+                SELECT * FROM sources WHERE id = $1
+                "#,
+                f.4 as i32
+            )
+            .fetch_one(&mut txn)
+            .await?;
 
-        Ok(mesg)
+            sources.insert(f.0, (bar.uuid, f.4));
+        }
+
+        let mut res: Vec<Message> = Vec::new();
+
+        for f in &foo {
+            let audiences = audiences.get(&f.0);
+            let sources = sources.get(&f.0);
+
+            let aud: MessageAudience;
+            let src: MessageSource;
+
+            if let Some(audiences) = audiences {
+                aud = MessageAudience::new(audiences.0.clone());
+            } else {
+                continue;
+            }
+
+            if let Some(source) = sources {
+                src = MessageSource::new(source.0.clone());
+            } else {
+                continue;
+            }
+
+            res.push(Message {
+                id: f.0,
+                timestamp: f.1,
+                source: src,
+                audience: aud,
+                content: f.2.to_string(),
+                context: f.5.to_string()
+            })
+        }
+
+        txn.commit().await?;
+
+        Ok(res)
     }
 }

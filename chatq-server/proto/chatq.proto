@@ -1,17 +1,14 @@
 
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 package chatq;
 
 service MessageHandler {
-
-    rpc SubmitMessage (MessageSubmitRequest) returns (google.protobuf.Empty);
-    rpc SubmitMessages (MessageSubmitRequest) returns (google.protobuf.Empty);
-    rpc ListenMessages (MessageListenRequest) returns (stream MessageUpdate);
-    rpc QueryMessages (MessageFilterRequest) returns (QueryMessageResponse);
+    rpc InsertMessages (MessageInsertRequest) returns (MessageInsertResponse);
+    rpc ListenMessages (MessageListenRequest) returns (stream MessageBroadcast);
+    rpc QueryMessages (MessageQueryRequest) returns (QueryMessageResponse);
 }
 
 message Uuid {
@@ -41,14 +38,12 @@ message Plugins {
 message MessageAudience {
     oneof audience {
         Uuids players = 1;
-        Servers server = 2;
     }
 }
 
 message MessageSource {
     oneof source {
-        Uuids players = 1;
-        Plugins plugins = 2;
+        Uuid player = 1;
     }
 }
 
@@ -58,6 +53,7 @@ message Message {
     MessageSource source = 3;
     MessageAudience audience = 4;
     string content = 5;
+    string context = 6;
 }
 
 message QueryMessageResponse {
@@ -73,29 +69,89 @@ message MessageStub {
     MessageSource source = 2;
     MessageAudience audience = 3;
     string content = 4;
+    string context = 5;
 }
 
-message MessageSubmitRequest {
-    repeated MessageStub stubs = 1;
+message MessageInsertRequest {
+    MessageStub stub = 1;
 }
 
-message MessageUpdate {
+message MessageInsertResponse {
+    Message message = 1;
+}
+
+message MessageBroadcast {
     Message msg = 1;
 }
 
-message MessageFilter {
-    oneof condition {
-        google.protobuf.Timestamp before = 1;
-        google.protobuf.Timestamp after = 2;
-        Uuid player = 3;
-        Server server = 4;
+message MessageFilterPattern {
+    enum OPERATION {
+        AND = 0;
+        OR = 1;
+        NOT = 2;
+    }
+
+    message MessageFilter {
+        message TimestampFilter {
+            oneof condition {
+                google.protobuf.Timestamp equals = 1;
+                google.protobuf.Timestamp greater_than = 2;
+                google.protobuf.Timestamp less_than = 3;
+                google.protobuf.Timestamp greater_than_equal = 4;
+                google.protobuf.Timestamp less_than_equal = 5;
+            }
+        }
+
+        message AudienceFilter {
+            Uuid player = 1;
+        }
+
+        message SourceFilter {
+            Uuid player = 1;
+        }
+
+        message ContextFilter {
+            string context = 1;
+        }
+
+        oneof condition {
+            TimestampFilter insert_timestamp = 1;
+            AudienceFilter audience = 2;
+            SourceFilter source = 3;
+            ContextFilter context = 4;
+        }
+    }
+
+    message CompositeFilter {
+        OPERATION operation = 1;
+        repeated FilterItem items = 2;
+
+        message FilterItem {
+            oneof type {
+                MessageFilter single = 1;
+                CompositeFilter composite = 2;
+            }
+        }
+    }
+
+    oneof primary_condition {
+        CompositeFilter composite_filter = 1;
+        MessageFilter single_filter = 2;
     }
 }
 
 message MessageListenRequest {
-    repeated MessageFilter filter = 1;
+    MessageFilterPattern pattern = 1;
 }
 
-message MessageFilterRequest {
-    repeated MessageFilter filter = 1;
+message MessageQueryRequest {
+    MessageQueryPattern pattern = 1; 
+}
+
+message MessageQueryPattern {
+    oneof limit {
+        bool all = 1;
+        int32 amount = 2;
+    }
+    MessageFilterPattern filter = 4;
 }
