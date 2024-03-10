@@ -1,5 +1,5 @@
-mod data;
+pub mod data;
 
-mod chatq {
+pub mod chatq {
     tonic::include_proto!("chatq");
 }

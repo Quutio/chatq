@@ -1,5 +1,5 @@
-use crate::chatq::MessageQueryRequest;
-use crate::data::models::query::MessageQueryPattern;
+use chatq_types::chatq::MessageQueryRequest;
+use chatq_types::data::query::MessageQueryPattern;
 use crate::message_handler::MessageHandler;
 use anyhow::Context;
 use tokio::sync::broadcast;
@@ -7,12 +7,12 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{async_trait, Request, Response, Status};
 
-use crate::chatq;
-use crate::chatq::{
+use chatq_types::chatq;
+use chatq_types::chatq::{
     MessageBroadcast, MessageInsertRequest, MessageInsertResponse, MessageListenRequest,
     QueryMessageResponse,
 };
-use crate::data::models::{EvaluableFilter, Message, MessageFilterPattern};
+use chatq_types::data::{EvaluableFilter, Message, MessageFilterPattern};
 
 pub struct GrpcMessageHandler {
     handler: MessageHandler,

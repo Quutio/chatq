@@ -1,18 +1,13 @@
-pub mod data;
 
 use chrono::NaiveDateTime;
-use data::models::query::MessageQueryPattern;
-use data::models::*;
+use chatq_types::data::*;
 use sqlx::postgres::PgRow;
 use sqlx::{PgPool, Row};
 use std::collections::HashMap;
+use chatq_types::data::query::MessageQueryPattern;
 
 pub mod grpc;
 pub mod message_handler;
-
-pub mod chatq {
-    tonic::include_proto!("chatq");
-}
 
 pub struct ChatQDao {
     pub pool: PgPool,
@@ -75,7 +70,7 @@ impl ChatQDao {
         let restriction = query.filter.to_string();
         let limit = query.limit.to_string();
 
-        let foo = sqlx::query(&format!(
+        let all_messages = sqlx::query(&format!(
             r#"
             SELECT messages.*
             FROM messages
@@ -102,32 +97,32 @@ impl ChatQDao {
         let mut audiences = HashMap::new();
         let mut sources = HashMap::new();
 
-        for f in &foo {
-            let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, f.3 as i32)
+        for message in &all_messages {
+            let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, message.3 as i32)
                 .fetch_one(&mut txn)
                 .await?;
 
-            audiences.insert(f.0, (bar.users, f.3));
+            audiences.insert(message.0, (bar.users, message.3));
         }
 
-        for f in &foo {
+        for message in &all_messages {
             let bar = sqlx::query!(
                 r#"
                 SELECT * FROM sources WHERE id = $1
                 "#,
-                f.4 as i32
+                message.4 as i32
             )
             .fetch_one(&mut txn)
             .await?;
 
-            sources.insert(f.0, (bar.uuid, f.4));
+            sources.insert(message.0, (bar.uuid, message.4));
         }
 
         let mut res: Vec<Message> = Vec::new();
 
-        for f in &foo {
-            let audiences = audiences.get(&f.0);
-            let sources = sources.get(&f.0);
+        for message in &all_messages {
+            let audiences = audiences.get(&message.0);
+            let sources = sources.get(&message.0);
 
             let aud: MessageAudience;
             let src: MessageSource;
@@ -145,12 +140,12 @@ impl ChatQDao {
             }
 
             res.push(Message {
-                id: f.0,
-                timestamp: f.1,
+                id: message.0,
+                timestamp: message.1,
                 source: src,
                 audience: aud,
-                content: f.2.to_string(),
-                context: f.5.to_string()
+                content: message.2.to_string(),
+                context: message.5.to_string()
             })
         }
 

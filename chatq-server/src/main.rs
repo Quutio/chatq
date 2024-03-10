@@ -1,5 +1,5 @@
 use dotenv::dotenv;
-use lib::chatq::message_handler_server::MessageHandlerServer;
+use chatq_types::chatq::message_handler_server::MessageHandlerServer;
 use lib::grpc::message_handler::GrpcMessageHandler;
 
 use tonic::transport::Server;

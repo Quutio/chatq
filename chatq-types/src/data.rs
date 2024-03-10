@@ -932,7 +932,7 @@ impl TryFrom<chatq::MessageFilterPattern> for MessageFilterPattern {
 mod tests {
     use super::{
         AudienceFilter, CompositeFilter, EvaluableFilter, FilterItem, Message, MessageAudience,
-        MessageFilter, MessageFilterPattern, MessageSource, Plugin, SourceFilter,
+        MessageFilter, MessageFilterPattern, MessageSource,
     };
     use chrono::Utc;
     use sqlx::types::Uuid;
