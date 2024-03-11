@@ -67,6 +67,11 @@ async fn fetch_messages() -> Vec<MessageBarProps> {
     res
 }
 
+#[derive(PartialEq, Props, Clone)]
+struct FilterBoxProps {
+
+}
+
 #[component]
 fn MessageBox(cx: Scope<MessageBoxProps>) -> Element {
     let messages = use_future(&cx, (), |_| {
@@ -76,10 +81,26 @@ fn MessageBox(cx: Scope<MessageBoxProps>) -> Element {
     });
     cx.render(rsx! {
         div {
-            class: "bg-gray-50 min-w-fit text-gray-800 dark:bg-zinc-900 font-mono text-sm p-2 rounded-lg dark:text-zinc-200",
+            class: "bg-gray-50 min-w-fit p-2 text-gray-800 dark:bg-zinc-900 font-mono text-sm p-2 rounded-lg dark:text-zinc-200",
 
             div {
-                "Messages received by [{cx.props.target}]"
+                "Messages received by user [ @{cx.props.target} ]"
+            },
+
+            div {
+                class: "grid grid-cols-3 gap-2",
+                div {
+                    "01"
+                }
+                div {
+                    "01"
+                }
+                div {
+                    "01"
+                }
+                div {
+                    "01"
+                }
             }
 
             match messages.value() {
@@ -106,16 +127,23 @@ fn MessageBox(cx: Scope<MessageBoxProps>) -> Element {
 fn MessageBar(cx: Scope<MessageBarProps>) -> Element {
     cx.render(rsx! {
         div {
-            class: "bg-gray-50 text-gray-700 dark:bg-zinc-800 dark:md:hover:bg-fuchsia-600 font-mono text-sm p-3 rounded-lg dark:text-zinc-200 mb-4",
+            class: "bg-gray-50 text-gray-700 dark:bg-zinc-800 font-mono text-sm p-3 rounded-lg dark:text-zinc-200 mb-4",
             div {
                 class: "flex justify-between space-x-20 dark:text-white",
-                span {
-                    class: "text-sm font-bold font-mono text-gray-800 dark:text-white",
+                button {
+                    class: "text-sm font-bold dark:md:hover:underline font-mono text-gray-800 dark:text-white",
                     "@{cx.props.author}"
                 }
-                span {
-                    class: "text-sm text-gray-500 dark:text-white",
-                    "20:20 @DTM"
+                div {
+                    class: "flex flex-row space-x-2 justify-between",
+                    button {
+                        class: "text-sm text-gray-500 dark:text-white bg-zinc-600",
+                        "20:20"
+                    }
+                    button {
+                        class: "text-sm dark:md:hover:bg-lime-700 text-gray-500 dark:text-white",
+                        "@DTM"
+                    }
                 }
             }
             "{cx.props.content}"
