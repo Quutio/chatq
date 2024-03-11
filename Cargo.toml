@@ -3,4 +3,4 @@ members = [
     "chatq-gateway",
     "chatq-server",
     "chatq-types"
-]
+, "chatq-webui"]

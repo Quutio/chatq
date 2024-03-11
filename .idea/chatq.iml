@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/chatq-gateway/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/chatq-server/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/chatq-types/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/chatq-webui/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
