@@ -7,8 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Initialize webui skeleton.">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Add founding routes to gateway impl.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-webui/public/tailwind.css" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/public/tailwind.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,26 +40,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "dev",
-    "last_opened_file_path": "/home/tgv_/dev/multilanguage-projects/chatq/chatq-webui/public",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "language.rust.cargo.check",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/multilanguage-projects/chatq&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/chatq-webui/public" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
@@ -114,7 +112,7 @@
       <option name="presentableId" value="Default" />
       <updated>1710031116297</updated>
       <workItem from="1710031117307" duration="37186000" />
-      <workItem from="1710155453945" duration="22472000" />
+      <workItem from="1710155453945" duration="16859000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -188,15 +186,7 @@
       <option name="project" value="LOCAL" />
       <updated>1710073626561</updated>
     </task>
-    <task id="LOCAL-00010" summary="Initialize webui skeleton.">
-      <option name="closed" value="true" />
-      <created>1710174329858</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1710174329858</updated>
-    </task>
-    <option name="localTasksCounter" value="11" />
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -212,7 +202,6 @@
     <MESSAGE value="Progress gateway" />
     <MESSAGE value="Progress gateway further" />
     <MESSAGE value="Add founding routes to gateway impl." />
-    <MESSAGE value="Initialize webui skeleton." />
-    <option name="LAST_COMMIT_MESSAGE" value="Initialize webui skeleton." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add founding routes to gateway impl." />
   </component>
 </project>
