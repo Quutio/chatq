@@ -89,18 +89,6 @@ fn MessageBox(cx: Scope<MessageBoxProps>) -> Element {
 
             div {
                 class: "grid grid-cols-3 gap-2",
-                div {
-                    "01"
-                }
-                div {
-                    "01"
-                }
-                div {
-                    "01"
-                }
-                div {
-                    "01"
-                }
             }
 
             match messages.value() {
