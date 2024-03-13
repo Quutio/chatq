@@ -3,7 +3,7 @@
 CREATE TABLE audiences
 (
     id bigserial PRIMARY KEY,
-    users uuid[] NOT NULL,
+    users uuid[] UNIQUE NOT NULL,
     users_hash TEXT NOT NULL
 );
 

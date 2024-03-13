@@ -1,9 +1,9 @@
 
 use chrono::NaiveDateTime;
-use chatq_types::data::*;
 use sqlx::postgres::PgRow;
 use sqlx::{PgPool, Row};
 use std::collections::HashMap;
+use chatq_types::data::message::{Message, MessageAudience, MessageSource, MessageStub};
 use chatq_types::data::query::MessageQueryPattern;
 
 pub mod grpc;
@@ -31,7 +31,7 @@ impl ChatQDao {
             .into();
         let players = audience.players();
 
-        let audience_id = sqlx::query!(r#"INSERT INTO audiences (users,users_hash) VALUES ($1,MD5($2)) ON CONFLICT DO NOTHING RETURNING id"#, players, padded)
+        let audience_id = sqlx::query!(r#"INSERT INTO audiences (users,users_hash) VALUES ($1,MD5($2)) ON CONFLICT (users) DO UPDATE SET users = EXCLUDED.users RETURNING id"#, players, padded)
             .fetch_one(&mut txn).await?.id;
 
         let source_id = sqlx::query!(r#"INSERT INTO sources (uuid) VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid RETURNING id"#, stub.source.player())

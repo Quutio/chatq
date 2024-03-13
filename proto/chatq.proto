@@ -2,6 +2,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 package chatq;
 
@@ -9,6 +10,36 @@ service MessageHandler {
   rpc InsertMessages (MessageInsertRequest) returns (MessageInsertResponse);
   rpc ListenMessages (MessageListenRequest) returns (stream MessageBroadcast);
   rpc QueryMessages (MessageQueryRequest) returns (QueryMessageResponse);
+  rpc GenerateSnapshot (SnapshotGenerateRequest) returns (SnapshotGenerateRequest);
+  rpc FetchSnapshot (SnapshotFetchRequest) returns (FetchSnapshotResponse);
+}
+
+message FetchSnapshotResponse {
+  oneof result {
+    Snapshot some = 1;
+    google.protobuf.Empty none = 2;
+  }
+}
+
+message SnapshotFetchRequest {
+  string id = 1;
+}
+
+message GenerateSnapshotResponse {
+  string id = 1;
+  Snapshot snapshot = 2;
+}
+
+message SnapshotGenerateRequest {
+  Uuid target = 1;
+  MessageQueryPattern query = 2;
+}
+
+message Snapshot {
+  string in = 1;
+  Uuid target = 2;
+  MessageQueryPattern query = 3;
+  repeated Message messages = 4;
 }
 
 message Uuid {

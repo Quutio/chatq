@@ -1,4 +1,4 @@
-use chatq_types::chatq::MessageQueryRequest;
+use chatq_types::chatq::{FetchSnapshotResponse, MessageQueryRequest, SnapshotFetchRequest, SnapshotGenerateRequest};
 use chatq_types::data::query::MessageQueryPattern;
 use crate::message_handler::MessageHandler;
 use anyhow::Context;
@@ -12,7 +12,8 @@ use chatq_types::chatq::{
     MessageBroadcast, MessageInsertRequest, MessageInsertResponse, MessageListenRequest,
     QueryMessageResponse,
 };
-use chatq_types::data::{EvaluableFilter, Message, MessageFilterPattern};
+use chatq_types::data::filter::{EvaluableFilter, MessageFilterPattern};
+use chatq_types::data::message::Message;
 
 pub struct GrpcMessageHandler {
     handler: MessageHandler,
@@ -158,5 +159,13 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
         };
 
         Ok(Response::new(resp))
+    }
+
+    async fn generate_snapshot(&self, request: Request<SnapshotGenerateRequest>) -> Result<Response<SnapshotGenerateRequest>, Status> {
+        todo!()
+    }
+
+    async fn fetch_snapshot(&self, request: Request<SnapshotFetchRequest>) -> Result<Response<FetchSnapshotResponse>, Status> {
+        todo!()
     }
 }

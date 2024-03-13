@@ -6,9 +6,6 @@ use axum::{Json, Router};
 use chatq_types::chatq::message_handler_client::MessageHandlerClient;
 use chatq_types::chatq::MessageQueryRequest;
 use chatq_types::data::query::MessageQueryPattern;
-use chatq_types::data::{
-    AudienceFilter, CompositeFilter, FilterItem, Message, MessageFilter, MessageFilterPattern,
-};
 use nanoid::nanoid;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -17,6 +14,8 @@ use tokio::sync::Mutex;
 use tonic::transport::Channel;
 use tonic::Request;
 use uuid::Uuid;
+use chatq_types::data::filter::{AudienceFilter, CompositeFilter, FilterItem, MessageFilter, MessageFilterPattern};
+use chatq_types::data::message::Message;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Snapshot {

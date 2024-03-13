@@ -12,31 +12,14 @@ use crate::chatq::message_filter_pattern;
 use crate::chatq::message_filter_pattern::composite_filter::filter_item::Type;
 use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
 use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
+use crate::data2::query::MessageQueryPattern;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct Server {
-    pub value: String,
-}
-
-impl Server {
-    pub fn new(value: &str) -> Self {
-        Self {
-            value: value.to_string(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct Plugin {
-    pub value: String,
-}
-
-impl Plugin {
-    pub fn new(value: &str) -> Self {
-        Self {
-            value: value.to_string(),
-        }
-    }
+pub struct Snapshot {
+    pub id: String,
+    pub target: Uuid,
+    pub query: MessageQueryPattern,
+    pub messages: Vec<Message>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -423,30 +406,6 @@ pub mod query {
                     .try_into()?,
             })
         }
-    }
-}
-
-impl From<chatq::Server> for Server {
-    fn from(f: chatq::Server) -> Self {
-        Self { value: f.value }
-    }
-}
-
-impl From<Server> for chatq::Server {
-    fn from(f: Server) -> Self {
-        Self { value: f.value }
-    }
-}
-
-impl From<chatq::Plugin> for Plugin {
-    fn from(f: chatq::Plugin) -> Self {
-        Self { value: f.value }
-    }
-}
-
-impl From<Plugin> for chatq::Plugin {
-    fn from(f: Plugin) -> Self {
-        Self { value: f.value }
     }
 }
 

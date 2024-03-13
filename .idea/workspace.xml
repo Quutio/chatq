@@ -7,13 +7,20 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Progress further">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Force inclusion of reporting target in snapshot generation.">
+      <change afterPath="$PROJECT_DIR$/chatq-types/src/data/error.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/chatq-types/src/data/message.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/chatq-types/src/data/query.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-gateway/build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/build.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-gateway/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-webui/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/migrations/20240218071102_revamp.sql" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/migrations/20240218071102_revamp.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data2.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,7 +63,7 @@
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -117,7 +124,8 @@
       <updated>1710031116297</updated>
       <workItem from="1710031117307" duration="37186000" />
       <workItem from="1710155453945" duration="16859000" />
-      <workItem from="1710268291386" duration="4552000" />
+      <workItem from="1710268291386" duration="17852000" />
+      <workItem from="1710356443824" duration="3910000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -207,7 +215,15 @@
       <option name="project" value="LOCAL" />
       <updated>1710189147517</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Force inclusion of reporting target in snapshot generation.">
+      <option name="closed" value="true" />
+      <created>1710339530950</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1710339530950</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -225,6 +241,7 @@
     <MESSAGE value="Add founding routes to gateway impl." />
     <MESSAGE value="Remove dist" />
     <MESSAGE value="Progress further" />
-    <option name="LAST_COMMIT_MESSAGE" value="Progress further" />
+    <MESSAGE value="Force inclusion of reporting target in snapshot generation." />
+    <option name="LAST_COMMIT_MESSAGE" value="Force inclusion of reporting target in snapshot generation." />
   </component>
 </project>
