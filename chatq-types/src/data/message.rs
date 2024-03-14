@@ -1,7 +1,9 @@
 use std::str::FromStr;
+
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
 use crate::chatq;
 use crate::data::error::ModelConversionError;
 

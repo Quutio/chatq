@@ -1,15 +1,18 @@
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
 use crate::chatq;
 use crate::chatq::message_filter_pattern;
 use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
 use crate::chatq::message_filter_pattern::composite_filter::filter_item::Type;
 use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
 use crate::data::error::ModelConversionError;
+
 use super::message::Message;
 
 pub trait EvaluableFilter {

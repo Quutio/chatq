@@ -1,8 +1,10 @@
 use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 use crate::chatq;
 use crate::data::filter::MessageFilterPattern;
+
 use super::error::ModelConversionError;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]

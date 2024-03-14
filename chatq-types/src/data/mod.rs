@@ -1,9 +1,7 @@
-use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::chatq;
-use crate::data::error::ModelConversionError;
-use crate::data::message::{Message, MessageAudience, MessageSource};
+use crate::data::message::Message;
 use crate::data::query::MessageQueryPattern;
 
 pub mod filter;
