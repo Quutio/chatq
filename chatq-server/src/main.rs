@@ -1,17 +1,12 @@
-use dotenv::dotenv;
 use chatq_types::chatq::message_handler_server::MessageHandlerServer;
 use lib::grpc::message_handler::GrpcMessageHandler;
 
 use tonic::transport::Server;
-
-#[macro_use]
-extern crate log;
+use tracing::info;
 
 #[tokio::main]
 pub async fn main() {
-    dotenv().ok();
-
-    env_logger::builder().init();
+    tracing_subscriber::fmt::fmt().pretty().with_file(false).init();
 
     let db_url = &dotenv::var("DATABASE_URL").unwrap();
 

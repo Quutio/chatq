@@ -65,7 +65,12 @@ impl ChatQDao {
 
     pub async fn insert_message(&self, stub: MessageStub) -> anyhow::Result<Message> {
         let mut txn = self.pool.begin().await?;
-        Self::_insert_message(&mut *txn, stub).await
+
+        println!("ass");
+
+        let res = Self::_insert_message(&mut *txn, stub).await;
+        txn.commit().await?;
+        res
     }
 
     pub async fn _generate_snapshot<T>(conn: &mut T, target: Uuid, query: &MessageQueryPattern) -> anyhow::Result<Snapshot>
@@ -101,7 +106,9 @@ impl ChatQDao {
 
     pub async fn generate_snapshot(&self, target: Uuid, query: &MessageQueryPattern) -> anyhow::Result<Snapshot> {
         let mut txn: Transaction<Postgres> = self.pool.begin().await?;
-        Self::_generate_snapshot(&mut *txn, target, query).await
+        let res = Self::_generate_snapshot(&mut *txn, target, query).await;
+        txn.commit().await?;
+        res
     }
 
     pub async fn _fetch_snapshot<T>(conn: &mut T, id: i64) -> anyhow::Result<Option<Snapshot>>
@@ -135,7 +142,9 @@ impl ChatQDao {
 
     pub async fn fetch_snapshot(&self, id: i64) -> anyhow::Result<Option<Snapshot>> {
         let mut txn: Transaction<Postgres> = self.pool.begin().await?;
-        Self::_fetch_snapshot(&mut *txn, id).await
+        let res = Self::_fetch_snapshot(&mut *txn, id).await;
+        txn.commit().await?;
+        res
     }
 
     pub async fn _query_messages<T>(conn: &mut T, query: &MessageQueryPattern) -> anyhow::Result<Vec<Message>>
@@ -232,6 +241,8 @@ impl ChatQDao {
         query: &MessageQueryPattern,
     ) -> anyhow::Result<Vec<Message>> {
         let mut txn: Transaction<Postgres> = self.pool.begin().await?;
-        Self::_query_messages(&mut *txn, query).await
+        let res = Self::_query_messages(&mut *txn, query).await;
+        txn.commit().await?;
+        res
     }
 }

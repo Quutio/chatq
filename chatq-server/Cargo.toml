@@ -10,8 +10,6 @@ chatq-types = {path = "../chatq-types"}
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1.14"
 anyhow = "1"
-log = "0.4"
-env_logger = "0.9"
 tonic = "0.6"
 prost = "0.9"
 prost-types = "0.9"
@@ -26,6 +24,8 @@ chrono = "0.4"
 dotenv = "0.15.0"
 sqlx = { version = "0.7.4", features = [ "runtime-tokio-rustls", "macros", "postgres", "chrono", "uuid" ] }
 thiserror = "1"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["fmt"] }
 
 [build-dependencies]
 tonic-build = "0.6"
