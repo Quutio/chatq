@@ -1,21 +1,62 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use crate::chatq;
+use crate::data::error::ModelConversionError;
+use crate::data::error::ModelConversionError::ValueNotProvided;
 use crate::data::message::Message;
 use crate::data::query::MessageQueryPattern;
+use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
+pub mod error;
 pub mod filter;
 pub mod message;
 pub mod query;
-pub mod error;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Snapshot {
-    pub id: String,
+    pub id: i64,
     pub target: Uuid,
     pub query: MessageQueryPattern,
+    pub taken: NaiveDateTime,
     pub messages: Vec<Message>,
 }
+
+impl TryFrom<chatq::Snapshot> for Snapshot {
+    type Error = ModelConversionError;
+
+    fn try_from(value: chatq::Snapshot) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: value.id,
+            target: value.target.ok_or(ValueNotProvided("target"))?.try_into()?,
+            query: value.query.ok_or(ValueNotProvided("query"))?.try_into()?,
+            taken: NaiveDateTime::from_timestamp(
+                value.taken.ok_or(ValueNotProvided("taken"))?.seconds,
+                0,
+            ),
+            messages: value
+                .messages
+                .into_iter()
+                .map(|op| op.try_into())
+                .collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+}
+
+impl From<Snapshot> for chatq::Snapshot {
+    fn from(value: Snapshot) -> Self {
+        Self {
+            id: value.id,
+            target: Some(value.target.into()),
+            query: Some(value.query.into()),
+            taken: Some(prost_types::Timestamp {
+                seconds: value.taken.timestamp_millis(),
+                nanos: 0,
+            }),
+            messages: value.messages.into_iter().map(|op| op.into()).collect(),
+        }
+    }
+}
+
 impl TryFrom<chatq::Uuid> for Uuid {
     type Error = sqlx::types::uuid::Error;
 
@@ -24,12 +65,24 @@ impl TryFrom<chatq::Uuid> for Uuid {
     }
 }
 
+impl From<Uuid> for chatq::Uuid {
+    fn from(value: Uuid) -> Self {
+        Self {
+            value: value.to_string(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::data::filter::{
+        AudienceFilter, CompositeFilter, EvaluableFilter, FilterItem, MessageFilter,
+        MessageFilterPattern,
+    };
+    use crate::data::message::{Message, MessageAudience, MessageSource};
+    use crate::data::query::{Limit, MessageQueryPattern};
     use chrono::Utc;
     use sqlx::types::Uuid;
-    use crate::data::filter::{AudienceFilter, CompositeFilter, EvaluableFilter, FilterItem, MessageFilter, MessageFilterPattern};
-    use crate::data::message::{Message, MessageAudience, MessageSource};
 
     #[test]
     fn filters() {
@@ -58,8 +111,15 @@ mod tests {
                 ]),
             )]));
 
-        println!("{:#?}", filter);
-        println!("{}", filter);
+        println!("{:#?}", filter.clone());
+        println!("{}", filter.clone());
+
+        let pattern = MessageQueryPattern {
+            limit: Limit::Amount(32),
+            filter: filter.clone(),
+        };
+
+        println!("{}", pattern.limit);
 
         let res = data
             .iter()

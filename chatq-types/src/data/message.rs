@@ -138,7 +138,7 @@ impl From<MessageStub> for chatq::MessageStub {
             source: Some(f.source.into()),
             audience: Some(f.audience.into()),
             content: f.content,
-            context: f.context
+            context: f.context,
         }
     }
 }
@@ -163,7 +163,7 @@ impl TryFrom<chatq::MessageStub> for MessageStub {
                 .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
                 .try_into()?,
             content: f.content,
-            context: f.context
+            context: f.context,
         })
     }
 }
@@ -189,7 +189,7 @@ impl TryFrom<chatq::Message> for Message {
                 .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
                 .try_into()?,
             content: f.content,
-            context: f.context
+            context: f.context,
         })
     }
 }

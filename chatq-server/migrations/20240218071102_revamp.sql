@@ -29,3 +29,18 @@ CREATE TABLE messages
     audience_id bigint REFERENCES audiences (id),
     source_id   bigint REFERENCES sources (id)
 );
+
+CREATE TABLE query_snapshots
+(
+    id BIGSERIAL PRIMARY KEY,
+    query_json TEXT NOT NULL,
+    snapshot_taken TIMESTAMP NOT NULL,
+    target bigint REFERENCES sources(id)
+);
+
+CREATE TABLE message_snapshots
+(
+    snapshot_id BIGINT NOT NULL REFERENCES query_snapshots(id),
+    message_id BIGINT NOT NULL REFERENCES messages(id),
+    PRIMARY KEY (snapshot_id, message_id)
+);

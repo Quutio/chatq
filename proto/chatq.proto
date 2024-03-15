@@ -36,7 +36,14 @@ message SnapshotGenerateRequest {
 }
 
 message Snapshot {
-  string in = 1;
+  int64 id = 1;
+  Uuid target = 2;
+  MessageQueryPattern query = 3;
+  google.protobuf.Timestamp taken = 4;
+  repeated Message messages = 5;
+}
+
+message SnapshotStub {
   Uuid target = 2;
   MessageQueryPattern query = 3;
   repeated Message messages = 4;

@@ -8,9 +8,9 @@ use uuid::Uuid;
 
 use crate::chatq;
 use crate::chatq::message_filter_pattern;
-use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
 use crate::chatq::message_filter_pattern::composite_filter::filter_item::Type;
 use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
+use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
 use crate::data::error::ModelConversionError;
 
 use super::message::Message;
@@ -126,9 +126,7 @@ impl EvaluableFilter for TimestampFilter {
 impl EvaluableFilter for ContextFilter {
     fn evaluate(&self, message: &Message) -> bool {
         match self {
-            ContextFilter::Context(context) => {
-                *context == message.content
-            }
+            ContextFilter::Context(context) => *context == message.content,
         }
     }
 }
@@ -394,9 +392,7 @@ impl From<ContextFilter> for chatq::message_filter_pattern::message_filter::Cont
     fn from(value: ContextFilter) -> Self {
         Self {
             context: match value {
-                ContextFilter::Context(context) => {
-                    context
-                }
+                ContextFilter::Context(context) => context,
             },
         }
     }
@@ -453,9 +449,11 @@ impl From<MessageFilter> for chatq::message_filter_pattern::MessageFilter {
             },
             MessageFilter::Context(context) => message_filter_pattern::MessageFilter {
                 condition: Some(
-                    chatq::message_filter_pattern::message_filter::Condition::Context(context.into()),
-                )
-            }
+                    chatq::message_filter_pattern::message_filter::Condition::Context(
+                        context.into(),
+                    ),
+                ),
+            },
         }
     }
 }
