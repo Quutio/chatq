@@ -7,16 +7,13 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Reorganize data types to their own units">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Implement snapshot types.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-server/migrations/20240218071102_revamp.sql" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/migrations/20240218071102_revamp.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/build.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/error.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/message.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/message.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -124,7 +121,11 @@
       <workItem from="1710268291386" duration="17852000" />
       <workItem from="1710356443824" duration="3910000" />
       <workItem from="1710440800587" duration="16101000" />
-      <workItem from="1710461441839" duration="6842000" />
+      <workItem from="1710461441839" duration="12225000" />
+      <workItem from="1710475020178" duration="8203000" />
+      <workItem from="1710484074399" duration="311000" />
+      <workItem from="1710484394016" duration="406000" />
+      <workItem from="1710484807897" duration="698000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -230,7 +231,15 @@
       <option name="project" value="LOCAL" />
       <updated>1710442303162</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Implement snapshot types.">
+      <option name="closed" value="true" />
+      <created>1710468950361</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1710468950361</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -250,6 +259,7 @@
     <MESSAGE value="Progress further" />
     <MESSAGE value="Force inclusion of reporting target in snapshot generation." />
     <MESSAGE value="Reorganize data types to their own units" />
-    <option name="LAST_COMMIT_MESSAGE" value="Reorganize data types to their own units" />
+    <MESSAGE value="Implement snapshot types." />
+    <option name="LAST_COMMIT_MESSAGE" value="Implement snapshot types." />
   </component>
 </project>

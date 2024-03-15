@@ -10,7 +10,7 @@ service MessageHandler {
   rpc InsertMessages (MessageInsertRequest) returns (MessageInsertResponse);
   rpc ListenMessages (MessageListenRequest) returns (stream MessageBroadcast);
   rpc QueryMessages (MessageQueryRequest) returns (QueryMessageResponse);
-  rpc GenerateSnapshot (SnapshotGenerateRequest) returns (SnapshotGenerateRequest);
+  rpc GenerateSnapshot (SnapshotGenerateRequest) returns (GenerateSnapshotResponse);
   rpc FetchSnapshot (SnapshotFetchRequest) returns (FetchSnapshotResponse);
 }
 
@@ -22,11 +22,11 @@ message FetchSnapshotResponse {
 }
 
 message SnapshotFetchRequest {
-  string id = 1;
+  int64 id = 1;
 }
 
 message GenerateSnapshotResponse {
-  string id = 1;
+  int64 id = 1;
   Snapshot snapshot = 2;
 }
 

@@ -1,10 +1,13 @@
+use std::collections::HashMap;
 
 use chrono::NaiveDateTime;
+use sqlx::{Executor, PgPool, Postgres, query, Row, Transaction};
 use sqlx::postgres::PgRow;
-use sqlx::{PgPool, Row};
-use std::collections::HashMap;
+use uuid::Uuid;
+
 use chatq_types::data::message::{Message, MessageAudience, MessageSource, MessageStub};
 use chatq_types::data::query::MessageQueryPattern;
+use chatq_types::data::Snapshot;
 
 pub mod grpc;
 pub mod message_handler;
@@ -18,9 +21,10 @@ impl ChatQDao {
         ChatQDao { pool }
     }
 
-    pub async fn insert_message(&self, stub: MessageStub) -> anyhow::Result<Message> {
-        let mut txn = self.pool.begin().await?;
-
+    async fn _insert_message<T>(conn: &mut T, stub: MessageStub) -> anyhow::Result<Message>
+    where
+        for<'e> &'e mut T: Executor<'e, Database = Postgres>,
+    {
         let audience = &stub.audience;
         let padded: String = audience
             .players()
@@ -32,24 +36,22 @@ impl ChatQDao {
         let players = audience.players();
 
         let audience_id = sqlx::query!(r#"INSERT INTO audiences (users,users_hash) VALUES ($1,MD5($2)) ON CONFLICT (users) DO UPDATE SET users = EXCLUDED.users RETURNING id"#, players, padded)
-            .fetch_one(&mut txn).await?.id;
+            .fetch_one(&mut *conn).await?.id;
 
         let source_id = sqlx::query!(r#"INSERT INTO sources (uuid) VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid RETURNING id"#, stub.source.player())
-            .fetch_one(&mut txn).await?.id;
+            .fetch_one(&mut *conn).await?.id;
 
         let source = &stub.audience;
         for player in source.players() {
             let source_id = sqlx::query!(r#"INSERT INTO sources (uuid) VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid RETURNING id"#, player)
-                .fetch_one(&mut txn).await?.id;
+                .fetch_one(&mut *conn).await?.id;
             sqlx::query!(r#"INSERT INTO source_audiences (source_id,audience_id) VALUES ($1,$2) ON CONFLICT DO NOTHING"#, source_id,audience_id)
-                .execute(&mut txn).await?;
+                .execute(&mut *conn).await?;
         }
 
         let message_id = sqlx::query!(r#"INSERT INTO messages (issued,content,audience_id,source_id,context) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING RETURNING id"#,
             stub.timestamp, stub.content, audience_id, source_id, stub.context
-        ).fetch_one(&mut txn).await?.id;
-
-        txn.commit().await?;
+        ).fetch_one(&mut *conn).await?.id;
 
         Ok(Message {
             id: message_id,
@@ -61,12 +63,85 @@ impl ChatQDao {
         })
     }
 
-    pub async fn query_messages(
-        &self,
-        query: &MessageQueryPattern,
-    ) -> anyhow::Result<Vec<Message>> {
+    pub async fn insert_message(&self, stub: MessageStub) -> anyhow::Result<Message> {
         let mut txn = self.pool.begin().await?;
+        Self::_insert_message(&mut *txn, stub).await
+    }
 
+    pub async fn _generate_snapshot<T>(conn: &mut T, target: Uuid, query: &MessageQueryPattern) -> anyhow::Result<Snapshot>
+    where
+        for<'e> &'e mut T: Executor<'e, Database = Postgres>,
+    {
+
+        let source_id = sqlx::query!(r#"SELECT id FROM sources WHERE uuid = $1"#, &sqlx::types::Uuid::parse_str(&target.to_string())?)
+            .fetch_one(&mut *conn).await?.id;
+
+        let snapshot_rows = sqlx::query!(r#"INSERT INTO query_snapshots (query_json,target,snapshot_taken) VALUES ($1,$2,current_timestamp) RETURNING id, snapshot_taken"#, serde_json::to_string(&query).unwrap(), source_id)
+            .fetch_one(&mut *conn).await?;
+
+        let (snapshot_id,timestamp) = (snapshot_rows.id, snapshot_rows.snapshot_taken);
+
+        let queried = Self::_query_messages(&mut *conn, query).await?;
+
+        for message in &queried {
+            sqlx::query!(r#"INSERT INTO message_snapshots (snapshot_id,message_id) VALUES ($1,$2)"#, snapshot_id, message.id)
+                .execute(&mut *conn).await?;
+        }
+        
+        Ok(
+            Snapshot {
+                id: 0,
+                target,
+                query: query.clone(),
+                taken: timestamp,
+                messages: queried,
+            }
+        )
+    }
+
+    pub async fn generate_snapshot(&self, target: Uuid, query: &MessageQueryPattern) -> anyhow::Result<Snapshot> {
+        let mut txn: Transaction<Postgres> = self.pool.begin().await?;
+        Self::_generate_snapshot(&mut *txn, target, query).await
+    }
+
+    pub async fn _fetch_snapshot<T>(conn: &mut T, id: i64) -> anyhow::Result<Option<Snapshot>>
+    where
+        for<'e> &'e mut T: Executor<'e, Database = Postgres>,
+    {
+
+        let snapshot_query = match query!(r#"SELECT query_json,snapshot_taken,target FROM query_snapshots WHERE id = $1"#, id)
+            .fetch_optional(&mut *conn).await? {
+            None => {
+                return Ok(None)
+            }
+            Some(val) => {
+                val
+            }
+        };
+        let (query, taken, target) = (serde_json::from_str::<MessageQueryPattern>(&snapshot_query.query_json)?, snapshot_query.snapshot_taken, snapshot_query.target);
+        let messages = Self::_query_messages(&mut *conn, &query).await?;
+
+        let target = query!(r#"SELECT sources.* FROM sources WHERE sources.id = $1 "#, target)
+            .fetch_one(&mut *conn).await?;
+
+        Ok(Some(Snapshot {
+            id,
+            target: target.uuid,
+            query,
+            taken,
+            messages,
+        }))
+    }
+
+    pub async fn fetch_snapshot(&self, id: i64) -> anyhow::Result<Option<Snapshot>> {
+        let mut txn: Transaction<Postgres> = self.pool.begin().await?;
+        Self::_fetch_snapshot(&mut *txn, id).await
+    }
+
+    pub async fn _query_messages<T>(conn: &mut T, query: &MessageQueryPattern) -> anyhow::Result<Vec<Message>>
+    where
+        for<'e> &'e mut T: Executor<'e, Database = Postgres>,
+    {
         let restriction = query.filter.to_string();
         let limit = query.limit.to_string();
 
@@ -81,25 +156,25 @@ impl ChatQDao {
             "#,
             restriction, limit
         ))
-        .map(|row: PgRow| {
-            let message_id: i64 = row.get("id");
-            let issued: NaiveDateTime = row.get("issued");
-            let content: String = row.get("content");
-            let audience_id: i64 = row.get("audience_id");
-            let source_id: i64 = row.get("source_id");
-            let context: String = row.get("context");
+            .map(|row: PgRow| {
+                let message_id: i64 = row.get("id");
+                let issued: NaiveDateTime = row.get("issued");
+                let content: String = row.get("content");
+                let audience_id: i64 = row.get("audience_id");
+                let source_id: i64 = row.get("source_id");
+                let context: String = row.get("context");
 
-            (message_id, issued, content, audience_id, source_id, context)
-        })
-        .fetch_all(&mut txn)
-        .await?;
+                (message_id, issued, content, audience_id, source_id, context)
+            })
+            .fetch_all(&mut *conn)
+            .await?;
 
         let mut audiences = HashMap::new();
         let mut sources = HashMap::new();
 
         for message in &all_messages {
             let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, message.3 as i32)
-                .fetch_one(&mut txn)
+                .fetch_one(&mut *conn)
                 .await?;
 
             audiences.insert(message.0, (bar.users, message.3));
@@ -112,8 +187,8 @@ impl ChatQDao {
                 "#,
                 message.4 as i32
             )
-            .fetch_one(&mut txn)
-            .await?;
+                .fetch_one(&mut *conn)
+                .await?;
 
             sources.insert(message.0, (bar.uuid, message.4));
         }
@@ -149,8 +224,14 @@ impl ChatQDao {
             })
         }
 
-        txn.commit().await?;
-
         Ok(res)
+    }
+
+    pub async fn query_messages(
+        &self,
+        query: &MessageQueryPattern,
+    ) -> anyhow::Result<Vec<Message>> {
+        let mut txn: Transaction<Postgres> = self.pool.begin().await?;
+        Self::_query_messages(&mut *txn, query).await
     }
 }

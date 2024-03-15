@@ -16,8 +16,8 @@ CREATE TABLE sources
 CREATE TABLE source_audiences
 (
     id          bigserial PRIMARY KEY,
-    source_id   bigint REFERENCES sources (id),
-    audience_id bigint REFERENCES audiences (id)
+    source_id   bigint NOT NULL REFERENCES sources (id),
+    audience_id bigint NOT NULL REFERENCES audiences (id)
 );
 
 CREATE TABLE messages
@@ -26,8 +26,8 @@ CREATE TABLE messages
     issued      TIMESTAMP NOT NULL,
     content     TEXT      NOT NULL,
     context     TEXT      NOT NULL,
-    audience_id bigint REFERENCES audiences (id),
-    source_id   bigint REFERENCES sources (id)
+    audience_id bigint NOT NULL REFERENCES audiences (id),
+    source_id   bigint NOT NULL REFERENCES sources (id)
 );
 
 CREATE TABLE query_snapshots
@@ -35,7 +35,7 @@ CREATE TABLE query_snapshots
     id BIGSERIAL PRIMARY KEY,
     query_json TEXT NOT NULL,
     snapshot_taken TIMESTAMP NOT NULL,
-    target bigint REFERENCES sources(id)
+    target bigint NOT NULL REFERENCES sources(id)
 );
 
 CREATE TABLE message_snapshots
