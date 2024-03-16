@@ -7,14 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Initiate snapshot implementation">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Fiddle with logging.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/message_handler.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/message_handler.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-gateway/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/src/main.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -126,7 +121,8 @@
       <workItem from="1710484074399" duration="311000" />
       <workItem from="1710484394016" duration="406000" />
       <workItem from="1710484807897" duration="2066000" />
-      <workItem from="1710527420211" duration="5930000" />
+      <workItem from="1710527420211" duration="6662000" />
+      <workItem from="1710608439222" duration="10961000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -248,7 +244,15 @@
       <option name="project" value="LOCAL" />
       <updated>1710485600465</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Fiddle with logging.">
+      <option name="closed" value="true" />
+      <created>1710538012469</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1710538012469</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -270,6 +274,7 @@
     <MESSAGE value="Reorganize data types to their own units" />
     <MESSAGE value="Implement snapshot types." />
     <MESSAGE value="Initiate snapshot implementation" />
-    <option name="LAST_COMMIT_MESSAGE" value="Initiate snapshot implementation" />
+    <MESSAGE value="Fiddle with logging." />
+    <option name="LAST_COMMIT_MESSAGE" value="Fiddle with logging." />
   </component>
 </project>

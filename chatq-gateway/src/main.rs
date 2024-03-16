@@ -4,47 +4,20 @@ use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Json, Router};
 use chatq_types::chatq::message_handler_client::MessageHandlerClient;
-use chatq_types::chatq::MessageQueryRequest;
+use chatq_types::chatq::{SnapshotFetchRequest, SnapshotGenerateRequest};
 use chatq_types::data::query::MessageQueryPattern;
-use nanoid::nanoid;
+use chatq_types::data::Snapshot;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::transport::Channel;
 use tonic::Request;
 use uuid::Uuid;
-use chatq_types::data::filter::{AudienceFilter, CompositeFilter, FilterItem, MessageFilter, MessageFilterPattern};
-use chatq_types::data::message::Message;
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct Snapshot {
-    id: String,
-    target: Option<Uuid>,
-    query: MessageQueryPattern,
-    messages: Vec<Message>,
-}
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct SnapshotRecipe {
     target: Uuid,
     query: MessageQueryPattern,
-}
-
-async fn fetch_snapshot(
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<Json<Snapshot>, (StatusCode, String)> {
-    let snapshot_read = state
-        .snapshots
-        .read()
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
-
-    let read = snapshot_read
-        .get(&id)
-        .ok_or((StatusCode::BAD_REQUEST, "Snapshot not found.".to_string()))?;
-
-    Ok(Json(read.clone()))
 }
 
 async fn generate_snapshot(
@@ -53,68 +26,70 @@ async fn generate_snapshot(
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let mut client = state.client.lock().await;
 
-    let adapted_filter: MessageFilterPattern;
-
-    match recipe.query.filter {
-        MessageFilterPattern::Single(_) => {
-            adapted_filter = MessageFilterPattern::Single(MessageFilter::Audience(
-                AudienceFilter::Uuid(recipe.target),
-            ))
-        }
-        MessageFilterPattern::Composite(_) => {
-            adapted_filter =
-                MessageFilterPattern::Composite(CompositeFilter::And(vec![FilterItem::Single(
-                    MessageFilter::Audience(AudienceFilter::Uuid(recipe.target)),
-                )]))
-        }
-    }
-
-    let adapted_query = MessageQueryPattern {
-        limit: recipe.query.limit,
-        filter: adapted_filter,
-    };
-
-    let pattern: chatq_types::chatq::MessageQueryPattern = adapted_query.clone().into();
-
-    let request = Request::new(MessageQueryRequest {
-        pattern: Some(pattern),
+    let request = Request::new(SnapshotGenerateRequest {
+        target: Some(recipe.target.into()),
+        query: Some(recipe.query.into()),
     });
 
-    let result = client
-        .query_messages(request)
-        .await
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?
-        .into_inner()
-        .messages
-        .into_iter()
-        .map(|x| Message::try_from(x))
-        .flatten()
-        .collect::<Vec<_>>();
-
-    let id = nanoid!();
-
-    let snapshot = Snapshot {
-        target: recipe.target.into(),
-        id: id.clone(),
-        query: adapted_query,
-        messages: result,
-    };
-
-    let mut write = state.snapshots.write().unwrap();
-    let id = write
-        .insert(id, snapshot)
-        .ok_or((
+    let result = client.generate_snapshot(request).await.map_err(|err| {
+        (
             StatusCode::INTERNAL_SERVER_ERROR,
-            "Insert error".to_string(),
-        ))?
-        .id;
+            format!("server error {}", err),
+        )
+    })?;
 
-    Ok(id)
+    let snapshot: Snapshot = result
+        .into_inner()
+        .snapshot
+        .ok_or((StatusCode::NOT_FOUND, "not found".to_string()))?
+        .try_into()
+        .map_err(|err| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "snapshot invalid".to_string(),
+            )
+        })?;
+    Ok(Json(snapshot))
+}
+
+async fn fetch_snapshot(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let mut client = state.client.lock().await;
+
+    let request = Request::new(SnapshotFetchRequest { id });
+
+    let result = client.fetch_snapshot(request).await.map_err(|err| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("snapshot fetch {}", err),
+        )
+    })?;
+
+    let result = result
+        .into_inner()
+        .result
+        .ok_or((StatusCode::NOT_FOUND, "not found".to_string()))?;
+
+    return match result {
+        chatq_types::chatq::fetch_snapshot_response::Result::Some(snapshot) => {
+            let snapshot: Snapshot = snapshot.try_into().map_err(|err| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("snapshot invalid {}", err),
+                )
+            })?;
+            Ok(Json(snapshot))
+        }
+        chatq_types::chatq::fetch_snapshot_response::Result::None(_) => {
+            Err((StatusCode::NOT_FOUND, "not found".to_string()))
+        }
+    };
 }
 
 #[derive(Clone)]
 struct AppState {
-    snapshots: Arc<RwLock<HashMap<String, Snapshot>>>,
     client: Arc<Mutex<MessageHandlerClient<Channel>>>,
 }
 
@@ -126,7 +101,6 @@ async fn main() -> anyhow::Result<()> {
     let client = MessageHandlerClient::connect(server_addr).await?;
 
     let state = AppState {
-        snapshots: Arc::new(Default::default()),
         client: Arc::new(Mutex::new(client)),
     };
 
