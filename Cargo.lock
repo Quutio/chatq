@@ -414,6 +414,8 @@ dependencies = [
  "getrandom 0.2.10",
  "log",
  "reqwest",
+ "serde",
+ "uuid",
  "wasm-logger",
 ]
 

@@ -31,13 +31,16 @@ mod from_proto {
         type Error = ModelConversionError;
 
         fn try_from(value: chatq::Snapshot) -> Result<Self, Self::Error> {
+
+            let taken = value.taken.ok_or(ValueNotProvided("taken"))?;
+
             Ok(Self {
                 id: value.id,
                 target: value.target.ok_or(ValueNotProvided("target"))?.try_into()?,
                 query: value.query.ok_or(ValueNotProvided("query"))?.try_into()?,
                 taken: NaiveDateTime::from_timestamp(
-                    value.taken.ok_or(ValueNotProvided("taken"))?.seconds,
-                    0,
+                    taken.seconds,
+                    taken.nanos as u32,
                 ),
                 messages: value
                     .messages
@@ -55,8 +58,8 @@ mod from_proto {
                 target: Some(value.target.into()),
                 query: Some(value.query.into()),
                 taken: Some(prost_types::Timestamp {
-                    seconds: value.taken.timestamp_millis(),
-                    nanos: 0,
+                    seconds: value.taken.timestamp(),
+                    nanos: value.taken.timestamp_subsec_nanos() as i32,
                 }),
                 messages: value.messages.into_iter().map(|op| op.into()).collect(),
             }
