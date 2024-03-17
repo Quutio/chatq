@@ -1,7 +1,10 @@
-use chatq_types::chatq::{fetch_snapshot_response, FetchSnapshotResponse, GenerateSnapshotResponse, MessageQueryRequest, SnapshotFetchRequest, SnapshotGenerateRequest};
-use chatq_types::data::query::MessageQueryPattern;
 use crate::message_handler::MessageHandler;
 use anyhow::Context;
+use chatq_types::chatq::{
+    fetch_snapshot_response, FetchSnapshotResponse, GenerateSnapshotResponse, MessageQueryRequest,
+    SnapshotFetchRequest, SnapshotGenerateRequest,
+};
+use chatq_types::data::query::MessageQueryPattern;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -162,7 +165,10 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
         Ok(Response::new(resp))
     }
 
-    async fn generate_snapshot(&self, request: Request<SnapshotGenerateRequest>) -> Result<Response<GenerateSnapshotResponse>, Status> {
+    async fn generate_snapshot(
+        &self,
+        request: Request<SnapshotGenerateRequest>,
+    ) -> Result<Response<GenerateSnapshotResponse>, Status> {
         let req = request.into_inner();
         let query = req
             .query
@@ -172,11 +178,17 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
             .try_into()
             .map_err(|err| Status::invalid_argument(format!("invalid filter :: {}", err)))?;
 
-        let target: Uuid = req.target.ok_or(Status::invalid_argument("uuid not present"))?
+        let target: Uuid = req
+            .target
+            .ok_or(Status::invalid_argument("uuid not present"))?
             .try_into()
             .map_err(|err| Status::invalid_argument(format!("invalid uuid :: {}", err)))?;
 
-        let res = self.handler.db.generate_snapshot(target, &query).await
+        let res = self
+            .handler
+            .db
+            .generate_snapshot(target, &query)
+            .await
             .map_err(|err| Status::internal(format!("database failure {}", err.to_string())))?;
 
         let resp = GenerateSnapshotResponse {
@@ -187,10 +199,17 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
         Ok(Response::new(resp))
     }
 
-    async fn fetch_snapshot(&self, request: Request<SnapshotFetchRequest>) -> Result<Response<FetchSnapshotResponse>, Status> {
+    async fn fetch_snapshot(
+        &self,
+        request: Request<SnapshotFetchRequest>,
+    ) -> Result<Response<FetchSnapshotResponse>, Status> {
         let req = request.into_inner().id;
 
-        let res = self.handler.db.fetch_snapshot(req).await
+        let res = self
+            .handler
+            .db
+            .fetch_snapshot(req)
+            .await
             .map_err(|err| Status::internal(format!("database failure {}", err.to_string())))?;
 
         match res {

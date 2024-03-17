@@ -75,6 +75,7 @@ impl From<Uuid> for chatq::Uuid {
 
 #[cfg(test)]
 mod tests {
+    use crate::chatq::message_filter_pattern::PrimaryCondition::SingleFilter;
     use crate::data::filter::{
         AudienceFilter, CompositeFilter, EvaluableFilter, FilterItem, MessageFilter,
         MessageFilterPattern,
@@ -83,6 +84,9 @@ mod tests {
     use crate::data::query::{Limit, MessageQueryPattern};
     use chrono::Utc;
     use sqlx::types::Uuid;
+    use std::str::FromStr;
+    use tonic::IntoRequest;
+    use crate::chatq::SnapshotGenerateRequest;
 
     #[test]
     fn filters() {
@@ -127,5 +131,32 @@ mod tests {
             .collect::<Vec<_>>();
 
         println!("{:#?}", res)
+    }
+
+    #[test]
+    fn grpc_filter() {
+
+        let target = Uuid::from_str("4a997b33-3c67-4204-97e0-d21d50d6dda0").unwrap();
+
+        let filter = MessageFilterPattern::Single(MessageFilter::Audience(AudienceFilter::Uuid(
+            target.clone(),
+        )));
+
+        let query = MessageQueryPattern {
+            limit: Limit::All,
+            filter,
+        };
+
+        println!("{:#?}", query);
+
+
+        let grpcd: crate::chatq::MessageQueryPattern = query.into();
+
+        println!("{:#?}", grpcd);
+
+        let req = SnapshotGenerateRequest {
+            target: Some(target.clone().into()),
+            query: Some(grpcd),
+        };
     }
 }

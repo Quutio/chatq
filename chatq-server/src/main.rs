@@ -6,7 +6,10 @@ use tracing::info;
 
 #[tokio::main]
 pub async fn main() {
-    tracing_subscriber::fmt::fmt().pretty().with_file(false).init();
+    tracing_subscriber::fmt::fmt()
+        .pretty()
+        .with_file(false)
+        .init();
 
     let db_url = &dotenv::var("DATABASE_URL").unwrap();
 

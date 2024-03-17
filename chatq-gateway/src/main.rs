@@ -1,7 +1,7 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use chatq_types::chatq::message_handler_client::MessageHandlerClient;
 use chatq_types::chatq::{SnapshotFetchRequest, SnapshotGenerateRequest};
@@ -105,6 +105,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let app = Router::new()
+        .route("/fetch-snapshot", get(fetch_snapshot))
         .route("/generate-snapshot", post(generate_snapshot))
         .with_state(state);
 

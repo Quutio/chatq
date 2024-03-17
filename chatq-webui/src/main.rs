@@ -68,17 +68,11 @@ async fn fetch_messages() -> Vec<MessageBarProps> {
 }
 
 #[derive(PartialEq, Props, Clone)]
-struct FilterBoxProps {
-
-}
+struct FilterBoxProps {}
 
 #[component]
 fn MessageBox(cx: Scope<MessageBoxProps>) -> Element {
-    let messages = use_future(&cx, (), |_| {
-        async {
-            fetch_messages().await
-        }
-    });
+    let messages = use_future(&cx, (), |_| async { fetch_messages().await });
     cx.render(rsx! {
         div {
             class: "bg-gray-50 min-w-fit p-2 text-gray-800 dark:bg-zinc-900 font-mono text-sm p-2 rounded-lg dark:text-zinc-200",
@@ -138,5 +132,3 @@ fn MessageBar(cx: Scope<MessageBarProps>) -> Element {
         }
     })
 }
-
-

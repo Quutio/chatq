@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use chrono::NaiveDateTime;
-use sqlx::{Executor, PgPool, Postgres, query, Row, Transaction};
 use sqlx::postgres::PgRow;
+use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction};
 use uuid::Uuid;
 
 use chatq_types::data::message::{Message, MessageAudience, MessageSource, MessageStub};
@@ -73,38 +73,53 @@ impl ChatQDao {
         res
     }
 
-    pub async fn _generate_snapshot<T>(conn: &mut T, target: Uuid, query: &MessageQueryPattern) -> anyhow::Result<Snapshot>
+    pub async fn _generate_snapshot<T>(
+        conn: &mut T,
+        target: Uuid,
+        query: &MessageQueryPattern,
+    ) -> anyhow::Result<Snapshot>
     where
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
-
-        let source_id = sqlx::query!(r#"SELECT id FROM sources WHERE uuid = $1"#, &sqlx::types::Uuid::parse_str(&target.to_string())?)
-            .fetch_one(&mut *conn).await?.id;
+        let source_id = sqlx::query!(
+            r#"SELECT id FROM sources WHERE uuid = $1"#,
+            &sqlx::types::Uuid::parse_str(&target.to_string())?
+        )
+        .fetch_one(&mut *conn)
+        .await?
+        .id;
 
         let snapshot_rows = sqlx::query!(r#"INSERT INTO query_snapshots (query_json,target,snapshot_taken) VALUES ($1,$2,current_timestamp) RETURNING id, snapshot_taken"#, serde_json::to_string(&query).unwrap(), source_id)
             .fetch_one(&mut *conn).await?;
 
-        let (snapshot_id,timestamp) = (snapshot_rows.id, snapshot_rows.snapshot_taken);
+        let (snapshot_id, timestamp) = (snapshot_rows.id, snapshot_rows.snapshot_taken);
 
         let queried = Self::_query_messages(&mut *conn, query).await?;
 
         for message in &queried {
-            sqlx::query!(r#"INSERT INTO message_snapshots (snapshot_id,message_id) VALUES ($1,$2)"#, snapshot_id, message.id)
-                .execute(&mut *conn).await?;
+            sqlx::query!(
+                r#"INSERT INTO message_snapshots (snapshot_id,message_id) VALUES ($1,$2)"#,
+                snapshot_id,
+                message.id
+            )
+            .execute(&mut *conn)
+            .await?;
         }
-        
-        Ok(
-            Snapshot {
-                id: 0,
-                target,
-                query: query.clone(),
-                taken: timestamp,
-                messages: queried,
-            }
-        )
+
+        Ok(Snapshot {
+            id: 0,
+            target,
+            query: query.clone(),
+            taken: timestamp,
+            messages: queried,
+        })
     }
 
-    pub async fn generate_snapshot(&self, target: Uuid, query: &MessageQueryPattern) -> anyhow::Result<Snapshot> {
+    pub async fn generate_snapshot(
+        &self,
+        target: Uuid,
+        query: &MessageQueryPattern,
+    ) -> anyhow::Result<Snapshot> {
         let mut txn: Transaction<Postgres> = self.pool.begin().await?;
         let res = Self::_generate_snapshot(&mut *txn, target, query).await;
         txn.commit().await?;
@@ -115,21 +130,29 @@ impl ChatQDao {
     where
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
-
-        let snapshot_query = match query!(r#"SELECT query_json,snapshot_taken,target FROM query_snapshots WHERE id = $1"#, id)
-            .fetch_optional(&mut *conn).await? {
-            None => {
-                return Ok(None)
-            }
-            Some(val) => {
-                val
-            }
+        let snapshot_query = match query!(
+            r#"SELECT query_json,snapshot_taken,target FROM query_snapshots WHERE id = $1"#,
+            id
+        )
+        .fetch_optional(&mut *conn)
+        .await?
+        {
+            None => return Ok(None),
+            Some(val) => val,
         };
-        let (query, taken, target) = (serde_json::from_str::<MessageQueryPattern>(&snapshot_query.query_json)?, snapshot_query.snapshot_taken, snapshot_query.target);
+        let (query, taken, target) = (
+            serde_json::from_str::<MessageQueryPattern>(&snapshot_query.query_json)?,
+            snapshot_query.snapshot_taken,
+            snapshot_query.target,
+        );
         let messages = Self::_query_messages(&mut *conn, &query).await?;
 
-        let target = query!(r#"SELECT sources.* FROM sources WHERE sources.id = $1 "#, target)
-            .fetch_one(&mut *conn).await?;
+        let target = query!(
+            r#"SELECT sources.* FROM sources WHERE sources.id = $1 "#,
+            target
+        )
+        .fetch_one(&mut *conn)
+        .await?;
 
         Ok(Some(Snapshot {
             id,
@@ -147,7 +170,10 @@ impl ChatQDao {
         res
     }
 
-    pub async fn _query_messages<T>(conn: &mut T, query: &MessageQueryPattern) -> anyhow::Result<Vec<Message>>
+    pub async fn _query_messages<T>(
+        conn: &mut T,
+        query: &MessageQueryPattern,
+    ) -> anyhow::Result<Vec<Message>>
     where
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
@@ -196,8 +222,8 @@ impl ChatQDao {
                 "#,
                 message.4 as i32
             )
-                .fetch_one(&mut *conn)
-                .await?;
+            .fetch_one(&mut *conn)
+            .await?;
 
             sources.insert(message.0, (bar.uuid, message.4));
         }
@@ -229,7 +255,7 @@ impl ChatQDao {
                 source: src,
                 audience: aud,
                 content: message.2.to_string(),
-                context: message.5.to_string()
+                context: message.5.to_string(),
             })
         }
 
