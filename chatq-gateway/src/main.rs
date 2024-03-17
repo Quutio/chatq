@@ -12,6 +12,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::transport::Channel;
 use tonic::Request;
+use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -72,6 +73,8 @@ async fn fetch_snapshot(
         .result
         .ok_or((StatusCode::NOT_FOUND, "not found".to_string()))?;
 
+    println!("aa");
+
     return match result {
         chatq_types::chatq::fetch_snapshot_response::Result::Some(snapshot) => {
             let snapshot: Snapshot = snapshot.try_into().map_err(|err| {
@@ -80,12 +83,15 @@ async fn fetch_snapshot(
                     format!("snapshot invalid {}", err),
                 )
             })?;
+
+            println!("bbb");
+
             Ok(Json(snapshot))
         }
         chatq_types::chatq::fetch_snapshot_response::Result::None(_) => {
             Err((StatusCode::NOT_FOUND, "not found".to_string()))
         }
-    };
+    }
 }
 
 #[derive(Clone)]
@@ -95,8 +101,8 @@ struct AppState {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let server_addr = dotenvy::var("CHATQ_SERVER_ADDRESS")?;
-    let serve_addr = dotenvy::var("CHATQ_GATEWAY_ADDRESS")?;
+    let server_addr = dotenvy::var("CHATQ_SERVER_ADDRESS").unwrap_or("http://localhost:10000".to_string());
+    let serve_addr = dotenvy::var("CHATQ_GATEWAY_ADDRESS").unwrap_or("localhost:3030".to_string());
 
     let client = MessageHandlerClient::connect(server_addr).await?;
 
@@ -105,8 +111,9 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let app = Router::new()
-        .route("/fetch-snapshot", get(fetch_snapshot))
+        .route("/fetch-snapshot/:id", get(fetch_snapshot))
         .route("/generate-snapshot", post(generate_snapshot))
+        .layer(CorsLayer::permissive())
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(serve_addr).await?;

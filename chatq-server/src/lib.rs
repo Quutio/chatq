@@ -187,7 +187,7 @@ impl ChatQDao {
             LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
             LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
             LEFT JOIN sources ON sources.id = messages.source_id
-            WHERE {} GROUP BY messages.id {}
+            WHERE {} GROUP BY messages.id {} ORDER BY messages.issued
             "#,
             restriction, limit
         ))

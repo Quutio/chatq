@@ -1,19 +1,24 @@
 #![allow(non_snake_case)]
 
+use chatq_types::data::Snapshot;
 use dioxus::prelude::*;
+use chatq_types::data::message::Message;
+use log::log;
 
-#[derive(Clone, PartialEq, Debug)]
-struct Message {
-    timestamp: String, // You could also use a proper date-time type
-    author: String,
-    content: String,
-}
+async fn fetch_snapshot() -> anyhow::Result<Snapshot> {
+    let url = "http://localhost:3030".to_string();
 
-struct AppState {
-    messages: Vec<Message>,
+    let url = format!("{}/fetch-snapshot/1", url);
+    let res = reqwest::get(&url).await?.json::<Snapshot>().await?;
+
+    log::info!("{:?}", res);
+
+    Ok(res)
 }
 
 fn main() {
+
+    wasm_logger::init(wasm_logger::Config::default());
     dioxus_web::launch(App)
 }
 
@@ -43,6 +48,17 @@ fn App(cx: Scope) -> Element {
 struct MessageBarProps {
     author: String,
     content: String,
+    context: String,
+}
+
+impl From<&Message> for MessageBarProps {
+    fn from(value: &Message) -> Self {
+        Self {
+            author: value.source.player().to_string(),
+            content: value.content.to_string(),
+            context: value.context.to_string(),
+        }
+    }
 }
 
 #[derive(PartialEq, Props, Clone)]
@@ -50,29 +66,14 @@ struct MessageBoxProps {
     target: String,
 }
 
-async fn fetch_messages() -> Vec<MessageBarProps> {
-    let mut res = Vec::new();
-
-    for i in (0..25) {
-        res.push(MessageBarProps {
-            author: "user1".to_string(),
-            content: "Hi there!".to_string(),
-        });
-        res.push(MessageBarProps {
-            author: "user2".to_string(),
-            content: "Hello there!".to_string(),
-        })
-    }
-
-    res
-}
-
 #[derive(PartialEq, Props, Clone)]
 struct FilterBoxProps {}
 
 #[component]
 fn MessageBox(cx: Scope<MessageBoxProps>) -> Element {
-    let messages = use_future(&cx, (), |_| async { fetch_messages().await });
+    let messages = use_future(&cx, (), |_| async {
+        fetch_snapshot().await.unwrap().messages
+    });
     cx.render(rsx! {
         div {
             class: "bg-gray-50 min-w-fit p-2 text-gray-800 dark:bg-zinc-900 font-mono text-sm p-2 rounded-lg dark:text-zinc-200",
@@ -87,15 +88,19 @@ fn MessageBox(cx: Scope<MessageBoxProps>) -> Element {
 
             match messages.value() {
                 Some(mesgs) => rsx! {
-                    mesgs.iter().map(|msg| rsx!(
+
+                    mesgs.iter().map(|msg| {
+                        let props = MessageBarProps::from(msg);
+                        rsx!(
                         div {
                             class: "space-5",
-                            MessageBar {
-                                author: msg.author.clone(),
-                                content: msg.content.clone()
-                            }
+                                MessageBar {
+                                    author: props.author,
+                                    content: props.content,
+                                    context: props.context
+                                }
                         }
-                    ))
+                    )})
                 },
                 None => rsx! {
                     "Loading"
