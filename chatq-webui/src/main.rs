@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use std::collections::{HashMap, HashSet};
-use dioxus::html::div;
+use dioxus::html::{div, title};
 use chatq_types::data::Snapshot;
 use dioxus::prelude::*;
 use chatq_types::data::message::Message;
@@ -9,6 +9,22 @@ use log::log;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+static COLOR_POOL: &[&str] = &[
+    "amber-800",
+    "yellow-800",
+    "lime-800",
+    "green-800",
+    "emerald-800",
+    "teal-800",
+    "cyan-800",
+    "sky-800",
+    "blue-800",
+    "indigo-800",
+    "violet-800",
+    "purple-800",
+    "fuchsia-800",
+];
 
 async fn fetch_snapshot() -> anyhow::Result<Snapshot> {
     let url = "http://localhost:3030".to_string();
@@ -202,75 +218,56 @@ fn MessageBox(cx: Scope) -> Element {
 
 #[component]
 fn MessageBar(cx: Scope<MessageBarProps>) -> Element {
-
     let highlighted_users = use_shared_state::<HashSet<String>>(cx).unwrap();
-    // let messages =  use_shared_state::<Snapshot>(cx).unwrap();
 
+    // Determine if the author is highlighted
+    let is_highlighted = highlighted_users.read().contains(&cx.props.author);
+
+    // Dynamic classes based on whether the author is highlighted
+    let border_class = if is_highlighted {
+        "border-l-4 border-lime-800 hover:scale-105"
+    } else {
+        "hover:border-l-4 border-0 hover:border-l4 dark:border-zinc-700"
+    };
+
+    let bg_class = if is_highlighted {
+        "dark:bg-zinc-950"
+    } else {
+        "dark:bg-zinc-800"
+    };
+
+
+    // Consolidate the rsx! block, only changing what's necessary based on the highlight
     cx.render(rsx! {
-        if !highlighted_users.read().contains(&cx.props.author) {
-            rsx! {
+        div {
+            class: "transition duration-150 ease-in-out bg-gray-50 text-gray-700 font-mono text-sm p-3 rounded-lg dark:text-zinc-200 mb-4 {border_class} {bg_class}",
+            div {
+                class: "flex justify-between space-x-20 dark:text-white",
+                button {
+                    title: "highlight user's messages",
+                    onclick: move |_| {
+                        if is_highlighted {
+                            highlighted_users.write().remove(&cx.props.author);
+                        } else {
+                            highlighted_users.write().insert(cx.props.author.to_string());
+                        }
+                    },
+                    class: "text-sm font-bold dark:md:hover:underline font-mono text-gray-800 dark:text-white",
+                    "@{cx.props.author}",
+                }
                 div {
-                    class: "transition duration-150 ease-in-out hover:border-l-4 border-0 hover:border-l4 border-zinc-700 bg-gray-50 text-gray-700 dark:bg-zinc-800 font-mono text-sm p-3 rounded-lg dark:text-zinc-200 mb-4",
-                    div {
-                        class: "flex justify-between space-x-20 dark:text-white",
-                        button {
-                            onclick: move |_| {
-                                if highlighted_users.read().contains(&cx.props.author) {
-                                    highlighted_users.write().remove(&cx.props.author);
-                                } else {
-                                    highlighted_users.write().insert(cx.props.author.to_string());
-                                }
-                            },
-                            class: "text-sm font-bold dark:md:hover:underline font-mono text-gray-800 dark:text-white",
-                            "@{cx.props.author}",
-                        }
-                        div {
-                            class: "flex flex-row space-x-2 justify-between",
-                            button {
-                                class: "text-sm dark:md:hover:bg-lime-700 text-gray-500 dark:text-white",
-                                r"@[{cx.props.context}]"
-                            }
-                            button {
-                                class: "text-sm text-gray-500 dark:text-white bg-zinc-600",
-                                "{cx.props.timestamp}"
-                            }
-                        }
+                    class: "flex flex-row space-x-2 justify-between",
+                    button {
+                        class: "text-sm dark:md:hover:bg-lime-700 text-gray-500 dark:text-white",
+                        r"@[{cx.props.context}]"
                     }
-                "{cx.props.content}"
+                    button {
+                        class: "text-sm text-gray-500 dark:text-white bg-zinc-600",
+                        "{cx.props.timestamp}"
+                    }
                 }
             }
-        } else {
-            rsx ! {
-                div {
-                    class: "transition duration-150 ease-in-out hover:scale-105 bg-gray-50 border-l-4 border-lime-800 text-gray-700 dark:bg-zinc-950 font-mono text-sm p-3 rounded-lg dark:text-zinc-200 mb-4",
-                    div {
-                        class: "flex justify-between space-x-20 dark:text-white",
-                        button {
-                            onclick: move |_| {
-                                if highlighted_users.read().contains(&cx.props.author) {
-                                    highlighted_users.write().remove(&cx.props.author);
-                                } else {
-                                    highlighted_users.write().insert(cx.props.author.to_string());
-                                }
-                            },
-                            class: "text-sm font-bold dark:md:hover:underline font-mono text-gray-800 dark:text-white",
-                            "@{cx.props.author}",
-                        }
-                        div {
-                            class: "flex flex-row space-x-2 justify-between",
-                            button {
-                                class: "text-sm dark:md:hover:bg-lime-700 text-gray-500 dark:text-white",
-                                r"@[{cx.props.context}]"
-                            }
-                            button {
-                                class: "text-sm text-gray-500 dark:text-white bg-zinc-600",
-                                "{cx.props.timestamp}"
-                            }
-                        }
-                    }
-                "{cx.props.content}"
-                }
-            }
+            "{cx.props.content}"
         }
     })
 }

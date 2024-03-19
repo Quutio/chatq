@@ -22,11 +22,11 @@ message FetchSnapshotResponse {
 }
 
 message SnapshotFetchRequest {
-  int64 id = 1;
+  Uuid id = 1;
 }
 
 message GenerateSnapshotResponse {
-  int64 id = 1;
+  Uuid id = 1;
   Snapshot snapshot = 2;
 }
 
@@ -36,17 +36,11 @@ message SnapshotGenerateRequest {
 }
 
 message Snapshot {
-  int64 id = 1;
+  Uuid id = 1;
   Uuid target = 2;
   MessageQueryPattern query = 3;
   google.protobuf.Timestamp taken = 4;
   repeated Message messages = 5;
-}
-
-message SnapshotStub {
-  Uuid target = 2;
-  MessageQueryPattern query = 3;
-  repeated Message messages = 4;
 }
 
 message Uuid {

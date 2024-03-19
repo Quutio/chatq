@@ -192,7 +192,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
             .map_err(|err| Status::internal(format!("database failure {}", err.to_string())))?;
 
         let resp = GenerateSnapshotResponse {
-            id: res.id,
+            id: Some(res.id.into()),
             snapshot: Some(res.into()),
         };
 
@@ -203,7 +203,12 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
         &self,
         request: Request<SnapshotFetchRequest>,
     ) -> Result<Response<FetchSnapshotResponse>, Status> {
-        let req = request.into_inner().id;
+        let req = request
+            .into_inner()
+            .id
+            .ok_or(Status::invalid_argument("id not present."))?
+            .try_into()
+            .map_err(|err| Status::internal(format!("invalid id :: {}", err)))?;
 
         let res = self
             .handler
@@ -212,14 +217,14 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
             .await
             .map_err(|err| Status::internal(format!("database failure {}", err.to_string())))?;
 
-        match res {
+        return match res {
             None => {
-                return Ok(Response::new(FetchSnapshotResponse {
+                Ok(Response::new(FetchSnapshotResponse {
                     result: Some(fetch_snapshot_response::Result::None(())),
                 }))
             }
             Some(snapshot) => {
-                return Ok(Response::new(FetchSnapshotResponse {
+                Ok(Response::new(FetchSnapshotResponse {
                     result: Some(fetch_snapshot_response::Result::Some(snapshot.into())),
                 }))
             }

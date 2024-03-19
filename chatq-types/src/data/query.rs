@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use serde::{Deserialize, Serialize};
 
 use crate::data::filter::MessageFilterPattern;
@@ -18,10 +16,10 @@ pub struct MessageQueryPattern {
 
 #[cfg(feature = "proto")]
 pub mod from_proto {
-    use std::fmt::Display;
     use crate::chatq;
     use crate::data::error::ModelConversionError;
     use crate::data::query::{Limit, MessageQueryPattern};
+    use std::fmt::Display;
 
     impl Display for Limit {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -77,5 +75,4 @@ pub mod from_proto {
             })
         }
     }
-
 }

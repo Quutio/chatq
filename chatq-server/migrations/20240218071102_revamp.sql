@@ -32,7 +32,7 @@ CREATE TABLE messages
 
 CREATE TABLE query_snapshots
 (
-    id BIGSERIAL PRIMARY KEY,
+    id uuid PRIMARY KEY,
     query_json TEXT NOT NULL,
     snapshot_taken TIMESTAMP NOT NULL,
     target bigint NOT NULL REFERENCES sources(id)
@@ -40,7 +40,7 @@ CREATE TABLE query_snapshots
 
 CREATE TABLE message_snapshots
 (
-    snapshot_id BIGINT NOT NULL REFERENCES query_snapshots(id),
+    snapshot_id uuid NOT NULL REFERENCES query_snapshots(id),
     message_id BIGINT NOT NULL REFERENCES messages(id),
     PRIMARY KEY (snapshot_id, message_id)
 );

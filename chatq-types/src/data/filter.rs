@@ -1,6 +1,5 @@
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
@@ -259,56 +258,44 @@ impl EvaluableFilter for MessageFilterPattern {
 
 #[cfg(feature = "proto")]
 pub mod from_proto {
-    use std::str::FromStr;
-    use chrono::NaiveDateTime;
-    use uuid::Uuid;
     use crate::chatq;
     use crate::chatq::message_filter_pattern;
     use crate::data::error::ModelConversionError;
-    use crate::data::filter::{AudienceFilter, CompositeFilter, ContextFilter, FilterItem, MessageFilter, MessageFilterPattern, SourceFilter, TimestampFilter};
+    use crate::data::filter::{
+        AudienceFilter, CompositeFilter, ContextFilter, FilterItem, MessageFilter,
+        MessageFilterPattern, SourceFilter, TimestampFilter,
+    };
+    use std::str::FromStr;
+    use uuid::Uuid;
 
-    use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
     use crate::chatq::message_filter_pattern::composite_filter::filter_item::Type;
     use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
+    use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
+    use crate::data::from_proto::{naive_from_proto, proto_from_naive};
 
     impl From<TimestampFilter> for message_filter::TimestampFilter {
         fn from(value: TimestampFilter) -> Self {
             message_filter::TimestampFilter {
                 condition: Some(match value {
                     TimestampFilter::Equals(ts) => {
-                        message_filter::timestamp_filter::Condition::Equals(prost_types::Timestamp {
-                            seconds: ts.timestamp(),
-                            nanos: 0,
-                        })
+                        message_filter::timestamp_filter::Condition::Equals(proto_from_naive(ts))
                     }
                     TimestampFilter::GreaterThan(ts) => {
-                        message_filter::timestamp_filter::Condition::GreaterThan(
-                            prost_types::Timestamp {
-                                seconds: ts.timestamp(),
-                                nanos: 0,
-                            },
-                        )
+                        message_filter::timestamp_filter::Condition::GreaterThan(proto_from_naive(
+                            ts,
+                        ))
                     }
                     TimestampFilter::LessThan(ts) => {
-                        message_filter::timestamp_filter::Condition::LessThan(prost_types::Timestamp {
-                            seconds: ts.timestamp(),
-                            nanos: 0,
-                        })
+                        message_filter::timestamp_filter::Condition::LessThan(proto_from_naive(ts))
                     }
                     TimestampFilter::GreaterThanEqual(ts) => {
                         message_filter::timestamp_filter::Condition::GreaterThanEqual(
-                            prost_types::Timestamp {
-                                seconds: ts.timestamp(),
-                                nanos: 0,
-                            },
+                            proto_from_naive(ts),
                         )
                     }
                     TimestampFilter::LessThanEqual(ts) => {
                         message_filter::timestamp_filter::Condition::LessThanEqual(
-                            prost_types::Timestamp {
-                                seconds: ts.timestamp(),
-                                nanos: 0,
-                            },
+                            proto_from_naive(ts),
                         )
                     }
                 }),
@@ -326,19 +313,13 @@ pub mod from_proto {
                 .condition
                 .ok_or_else(|| ModelConversionError::ValueNotProvided("condition"))?
             {
-                Condition::Equals(ts) => Ok(Self::Equals(NaiveDateTime::from_timestamp(ts.seconds, 0))),
-                Condition::GreaterThan(ts) => Ok(Self::GreaterThan(NaiveDateTime::from_timestamp(
-                    ts.seconds, 0,
-                ))),
-                Condition::LessThan(ts) => {
-                    Ok(Self::LessThan(NaiveDateTime::from_timestamp(ts.seconds, 0)))
+                Condition::Equals(ts) => Ok(Self::Equals(naive_from_proto(ts)?)),
+                Condition::GreaterThan(ts) => Ok(Self::GreaterThan(naive_from_proto(ts)?)),
+                Condition::LessThan(ts) => Ok(Self::LessThan(naive_from_proto(ts)?)),
+                Condition::GreaterThanEqual(ts) => {
+                    Ok(Self::GreaterThanEqual(naive_from_proto(ts)?))
                 }
-                Condition::GreaterThanEqual(ts) => Ok(Self::GreaterThanEqual(
-                    NaiveDateTime::from_timestamp(ts.seconds, 0),
-                )),
-                Condition::LessThanEqual(ts) => Ok(Self::LessThanEqual(NaiveDateTime::from_timestamp(
-                    ts.seconds, 0,
-                ))),
+                Condition::LessThanEqual(ts) => Ok(Self::LessThanEqual(naive_from_proto(ts)?)),
             }
         }
     }
@@ -362,7 +343,8 @@ pub mod from_proto {
             let player = value
                 .player
                 .map(|op| {
-                    Uuid::from_str(&op.value).map_err(|err| ModelConversionError::UuidConversion(err))
+                    Uuid::from_str(&op.value)
+                        .map_err(|err| ModelConversionError::UuidConversion(err))
                 })
                 .ok_or(ModelConversionError::ValueNotProvided("player"))??;
             Ok(AudienceFilter::Uuid(player))
@@ -388,7 +370,8 @@ pub mod from_proto {
             let player = value
                 .player
                 .map(|op| {
-                    Uuid::from_str(&op.value).map_err(|err| ModelConversionError::UuidConversion(err))
+                    Uuid::from_str(&op.value)
+                        .map_err(|err| ModelConversionError::UuidConversion(err))
                 })
                 .ok_or(ModelConversionError::ValueNotProvided("player"))??;
             Ok(SourceFilter::Uuid(player))
@@ -451,7 +434,9 @@ pub mod from_proto {
                 },
                 MessageFilter::Source(source) => message_filter_pattern::MessageFilter {
                     condition: Some(
-                        chatq::message_filter_pattern::message_filter::Condition::Source(source.into()),
+                        chatq::message_filter_pattern::message_filter::Condition::Source(
+                            source.into(),
+                        ),
                     ),
                 },
                 MessageFilter::Context(context) => message_filter_pattern::MessageFilter {
@@ -583,5 +568,4 @@ pub mod from_proto {
             }
         }
     }
-
 }

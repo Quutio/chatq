@@ -26,8 +26,11 @@ impl ChatQDao {
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
         let audience = &stub.audience;
-        let padded: String = audience
-            .players()
+
+        let mut players = audience.players().clone();
+        players.sort();
+
+        let padded: String = players
             .into_iter()
             .map(|op| op.to_string())
             .collect::<Vec<_>>()
@@ -35,23 +38,70 @@ impl ChatQDao {
             .into();
         let players = audience.players();
 
-        let audience_id = sqlx::query!(r#"INSERT INTO audiences (users,users_hash) VALUES ($1,MD5($2)) ON CONFLICT (users) DO UPDATE SET users = EXCLUDED.users RETURNING id"#, players, padded)
-            .fetch_one(&mut *conn).await?.id;
+        let audience_id = sqlx::query!(
+            r#"
+INSERT INTO audiences (users,users_hash)
+VALUES ($1,MD5($2)) ON CONFLICT (users) DO UPDATE SET users = EXCLUDED.users
+RETURNING id
+            "#,
+            players,
+            padded
+        )
+        .fetch_one(&mut *conn)
+        .await?
+        .id;
 
-        let source_id = sqlx::query!(r#"INSERT INTO sources (uuid) VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid RETURNING id"#, stub.source.player())
-            .fetch_one(&mut *conn).await?.id;
+        let source_id = sqlx::query!(
+            r#"
+INSERT INTO sources (uuid)
+VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid
+RETURNING id
+            "#,
+            stub.source.player()
+        )
+        .fetch_one(&mut *conn)
+        .await?
+        .id;
 
         let source = &stub.audience;
         for player in source.players() {
-            let source_id = sqlx::query!(r#"INSERT INTO sources (uuid) VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid RETURNING id"#, player)
-                .fetch_one(&mut *conn).await?.id;
-            sqlx::query!(r#"INSERT INTO source_audiences (source_id,audience_id) VALUES ($1,$2) ON CONFLICT DO NOTHING"#, source_id,audience_id)
-                .execute(&mut *conn).await?;
+            let source_id = sqlx::query!(
+                r#"
+INSERT INTO sources (uuid)
+VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid
+RETURNING id
+                "#,
+                player
+            )
+            .fetch_one(&mut *conn)
+            .await?
+            .id;
+            sqlx::query!(
+                r#"
+INSERT INTO source_audiences (source_id,audience_id)
+VALUES ($1,$2) ON CONFLICT DO NOTHING"#,
+                source_id,
+                audience_id
+            )
+            .execute(&mut *conn)
+            .await?;
         }
 
-        let message_id = sqlx::query!(r#"INSERT INTO messages (issued,content,audience_id,source_id,context) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING RETURNING id"#,
-            stub.timestamp, stub.content, audience_id, source_id, stub.context
-        ).fetch_one(&mut *conn).await?.id;
+        let message_id = sqlx::query!(
+            r#"
+INSERT INTO messages (issued,content,audience_id,source_id,context)
+VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING
+RETURNING id
+            "#,
+            stub.timestamp,
+            stub.content,
+            audience_id,
+            source_id,
+            stub.context
+        )
+        .fetch_one(&mut *conn)
+        .await?
+        .id;
 
         Ok(Message {
             id: message_id,
@@ -65,8 +115,6 @@ impl ChatQDao {
 
     pub async fn insert_message(&self, stub: MessageStub) -> anyhow::Result<Message> {
         let mut txn = self.pool.begin().await?;
-
-        println!("ass");
 
         let res = Self::_insert_message(&mut *txn, stub).await;
         txn.commit().await?;
@@ -89,8 +137,17 @@ impl ChatQDao {
         .await?
         .id;
 
-        let snapshot_rows = sqlx::query!(r#"INSERT INTO query_snapshots (query_json,target,snapshot_taken) VALUES ($1,$2,current_timestamp) RETURNING id, snapshot_taken"#, serde_json::to_string(&query).unwrap(), source_id)
-            .fetch_one(&mut *conn).await?;
+        let snapshot_rows = sqlx::query!(
+            r#"
+INSERT INTO query_snapshots (id,query_json,target,snapshot_taken)
+VALUES (gen_random_uuid (),$1,$2,current_timestamp)
+RETURNING id, snapshot_taken
+            "#,
+            serde_json::to_string(&query).unwrap(),
+            source_id
+        )
+        .fetch_one(&mut *conn)
+        .await?;
 
         let (snapshot_id, timestamp) = (snapshot_rows.id, snapshot_rows.snapshot_taken);
 
@@ -107,7 +164,7 @@ impl ChatQDao {
         }
 
         Ok(Snapshot {
-            id: 0,
+            id: snapshot_id,
             target,
             query: query.clone(),
             taken: timestamp,
@@ -126,7 +183,7 @@ impl ChatQDao {
         res
     }
 
-    pub async fn _fetch_snapshot<T>(conn: &mut T, id: i64) -> anyhow::Result<Option<Snapshot>>
+    pub async fn _fetch_snapshot<T>(conn: &mut T, id: Uuid) -> anyhow::Result<Option<Snapshot>>
     where
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
@@ -163,7 +220,7 @@ impl ChatQDao {
         }))
     }
 
-    pub async fn fetch_snapshot(&self, id: i64) -> anyhow::Result<Option<Snapshot>> {
+    pub async fn fetch_snapshot(&self, id: Uuid) -> anyhow::Result<Option<Snapshot>> {
         let mut txn: Transaction<Postgres> = self.pool.begin().await?;
         let res = Self::_fetch_snapshot(&mut *txn, id).await;
         txn.commit().await?;

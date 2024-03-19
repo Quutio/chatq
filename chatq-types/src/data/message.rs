@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -53,12 +51,12 @@ pub struct Message {
 
 #[cfg(feature = "proto")]
 pub mod from_proto {
-    use std::str::FromStr;
-    use chrono::NaiveDateTime;
-    use uuid::Uuid;
     use crate::chatq;
     use crate::data::error::ModelConversionError;
     use crate::data::message::{Message, MessageAudience, MessageSource, MessageStub};
+    use std::str::FromStr;
+    use uuid::Uuid;
+    use crate::data::from_proto::{naive_from_proto, proto_from_naive};
 
     impl TryFrom<chatq::MessageSource> for MessageSource {
         type Error = ModelConversionError;
@@ -137,10 +135,7 @@ pub mod from_proto {
     impl From<MessageStub> for chatq::MessageStub {
         fn from(f: MessageStub) -> Self {
             Self {
-                timestamp: Some(prost_types::Timestamp {
-                    seconds: f.timestamp.timestamp(),
-                    nanos: 0,
-                }),
+                timestamp: Some(proto_from_naive(f.timestamp)),
                 source: Some(f.source.into()),
                 audience: Some(f.audience.into()),
                 content: f.content,
@@ -154,12 +149,7 @@ pub mod from_proto {
 
         fn try_from(f: chatq::MessageStub) -> Result<Self, Self::Error> {
             Ok(Self {
-                timestamp: NaiveDateTime::from_timestamp(
-                    f.timestamp
-                        .ok_or_else(|| ModelConversionError::ValueNotProvided("timestamp"))?
-                        .seconds,
-                    0,
-                ),
+                timestamp: naive_from_proto(f.timestamp.ok_or(ModelConversionError::ValueNotProvided("timestamp"))?)?,
                 source: f
                     .source
                     .ok_or_else(|| ModelConversionError::ValueNotProvided("source"))?
@@ -180,12 +170,7 @@ pub mod from_proto {
         fn try_from(f: chatq::Message) -> Result<Self, Self::Error> {
             Ok(Self {
                 id: f.id,
-                timestamp: NaiveDateTime::from_timestamp(
-                    f.timestamp
-                        .ok_or_else(|| ModelConversionError::ValueNotProvided("timestamp"))?
-                        .seconds,
-                    0,
-                ),
+                timestamp: naive_from_proto(f.timestamp.ok_or(ModelConversionError::ValueNotProvided("timestamp"))?)?,
                 source: f
                     .source
                     .ok_or_else(|| ModelConversionError::ValueNotProvided("source"))?
@@ -204,10 +189,7 @@ pub mod from_proto {
         fn from(f: Message) -> Self {
             Self {
                 id: f.id,
-                timestamp: Some(prost_types::Timestamp {
-                    seconds: f.timestamp.timestamp(),
-                    nanos: 0,
-                }),
+                timestamp: Some(proto_from_naive(f.timestamp)),
                 source: Some(f.source.into()),
                 audience: Some(f.audience.into()),
                 content: f.content,
@@ -215,5 +197,4 @@ pub mod from_proto {
             }
         }
     }
-
 }
