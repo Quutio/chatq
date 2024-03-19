@@ -156,7 +156,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
             .db
             .query_messages(&query)
             .await
-            .map_err(|err| Status::internal(format!("database failure {}", err.to_string())))?;
+            .map_err(|err| Status::internal(format!("database failure {}", err)))?;
 
         let resp = QueryMessageResponse {
             messages: res.into_iter().map(|op| op.into()).collect(),
@@ -189,7 +189,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
             .db
             .generate_snapshot(target, &query)
             .await
-            .map_err(|err| Status::internal(format!("database failure {}", err.to_string())))?;
+            .map_err(|err| Status::internal(format!("database failure {}", err)))?;
 
         let resp = GenerateSnapshotResponse {
             id: Some(res.id.into()),
@@ -215,7 +215,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
             .db
             .fetch_snapshot(req)
             .await
-            .map_err(|err| Status::internal(format!("database failure {}", err.to_string())))?;
+            .map_err(|err| Status::internal(format!("database failure {}", err)))?;
 
         return match res {
             None => {

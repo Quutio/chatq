@@ -1,14 +1,11 @@
 #![allow(non_snake_case)]
 
-use std::collections::{HashMap, HashSet};
-use dioxus::html::{div, title};
+use std::collections::{HashSet};
 use chatq_types::data::Snapshot;
 use dioxus::prelude::*;
 use chatq_types::data::message::Message;
-use log::log;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 static COLOR_POOL: &[&str] = &[
     "amber-800",
@@ -160,11 +157,11 @@ fn MessageBox(cx: Scope) -> Element {
         messages
     });
 
-    let highlighted_users = use_shared_state_provider(cx, || {
+    use_shared_state_provider(cx, || {
         HashSet::<String>::new()
     });
 
-    let uuid_users = use_future(&cx, (), |_| async {
+    let uuid_users = use_future(cx, (), |_| async {
 
     });
 

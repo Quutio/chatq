@@ -64,7 +64,7 @@ pub mod from_proto {
         fn try_from(f: chatq::MessageSource) -> Result<Self, Self::Error> {
             match f
                 .source
-                .ok_or_else(|| ModelConversionError::ValueNotProvided("source"))?
+                .ok_or(ModelConversionError::ValueNotProvided("source"))?
             {
                 chatq::message_source::Source::Player(player) => {
                     Ok(MessageSource::new(Uuid::parse_str(&player.value)?))
@@ -89,7 +89,7 @@ pub mod from_proto {
         fn try_from(f: chatq::MessageAudience) -> Result<Self, Self::Error> {
             match f
                 .audience
-                .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
+                .ok_or(ModelConversionError::ValueNotProvided("audience"))?
             {
                 chatq::message_audience::Audience::Players(players) => Ok(MessageAudience::new(
                     players
@@ -97,7 +97,7 @@ pub mod from_proto {
                         .into_iter()
                         .map(|x| Uuid::from_str(&x.value))
                         .collect::<Result<_, _>>()
-                        .map_err(|err| ModelConversionError::UuidConversion(err))?,
+                        .map_err(ModelConversionError::UuidConversion)?,
                 )),
             }
         }
@@ -109,7 +109,7 @@ pub mod from_proto {
                 audience: Some(chatq::message_audience::Audience::Players(chatq::Uuids {
                     uuids: f
                         .players()
-                        .into_iter()
+                        .iter()
                         .map(|x| chatq::Uuid {
                             value: x.to_string(),
                         })
@@ -152,11 +152,11 @@ pub mod from_proto {
                 timestamp: naive_from_proto(f.timestamp.ok_or(ModelConversionError::ValueNotProvided("timestamp"))?)?,
                 source: f
                     .source
-                    .ok_or_else(|| ModelConversionError::ValueNotProvided("source"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("source"))?
                     .try_into()?,
                 audience: f
                     .audience
-                    .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("audience"))?
                     .try_into()?,
                 content: f.content,
                 context: f.context,
@@ -173,11 +173,11 @@ pub mod from_proto {
                 timestamp: naive_from_proto(f.timestamp.ok_or(ModelConversionError::ValueNotProvided("timestamp"))?)?,
                 source: f
                     .source
-                    .ok_or_else(|| ModelConversionError::ValueNotProvided("source"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("source"))?
                     .try_into()?,
                 audience: f
                     .audience
-                    .ok_or_else(|| ModelConversionError::ValueNotProvided("audience"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("audience"))?
                     .try_into()?,
                 content: f.content,
                 context: f.context,

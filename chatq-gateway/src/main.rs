@@ -47,7 +47,7 @@ async fn generate_snapshot(
         .map_err(|err| {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "snapshot invalid".to_string(),
+                format!("snapshot invalid :: {}", err),
             )
         })?;
     Ok(Json(snapshot))
@@ -55,11 +55,11 @@ async fn generate_snapshot(
 
 async fn fetch_snapshot(
     State(state): State<AppState>,
-    Path(id): Path<i64>,
+    Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let mut client = state.client.lock().await;
 
-    let request = Request::new(SnapshotFetchRequest { id });
+    let request = Request::new(SnapshotFetchRequest { id: Some(id.into()) });
 
     let result = client.fetch_snapshot(request).await.map_err(|err| {
         (
@@ -75,7 +75,7 @@ async fn fetch_snapshot(
 
     println!("aa");
 
-    return match result {
+    match result {
         chatq_types::chatq::fetch_snapshot_response::Result::Some(snapshot) => {
             let snapshot: Snapshot = snapshot.try_into().map_err(|err| {
                 (

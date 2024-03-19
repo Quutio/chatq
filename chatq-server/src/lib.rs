@@ -34,8 +34,8 @@ impl ChatQDao {
             .into_iter()
             .map(|op| op.to_string())
             .collect::<Vec<_>>()
-            .join("|")
-            .into();
+            .join("|");
+
         let players = audience.players();
 
         let audience_id = sqlx::query!(
@@ -301,7 +301,7 @@ RETURNING id, snapshot_taken
             }
 
             if let Some(source) = sources {
-                src = MessageSource::new(source.0.clone());
+                src = MessageSource::new(source.0);
             } else {
                 continue;
             }
