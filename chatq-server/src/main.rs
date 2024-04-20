@@ -11,9 +11,10 @@ pub async fn main() {
         .with_file(false)
         .init();
 
-    let db_url = &dotenv::var("DATABASE_URL").unwrap();
+    let db_url = &dotenv::var("CHATQ_DATABASE_URL").unwrap();
+    let addr = &dotenv::var("CHATQ_ADDRESS").unwrap_or("[::1]:10000".to_string());
 
-    let addr = "[::1]:10000".parse().unwrap();
+    let addr = addr.parse().unwrap();
 
     let handler = GrpcMessageHandler::new(db_url).await.unwrap();
     let handler_svc = MessageHandlerServer::new(handler);
