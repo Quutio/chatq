@@ -1,8 +1,8 @@
 use crate::message_handler::MessageHandler;
 use anyhow::Context;
 use chatq_types::chatq::{
-    fetch_snapshot_response, FetchSnapshotResponse, GenerateSnapshotResponse, MessageQueryRequest,
-    SnapshotFetchRequest, SnapshotGenerateRequest,
+    FetchSnapshotResponse, GenerateSnapshotResponse, MessageQueryRequest, SnapshotFetchRequest,
+    SnapshotGenerateRequest,
 };
 use chatq_types::data::query::MessageQueryPattern;
 use tokio::sync::broadcast;
@@ -218,16 +218,16 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
             .map_err(|err| Status::internal(format!("database failure {}", err)))?;
 
         return match res {
-            None => {
-                Ok(Response::new(FetchSnapshotResponse {
-                    result: Some(fetch_snapshot_response::Result::None(())),
-                }))
-            }
+            None => Ok(Response::new(FetchSnapshotResponse {
+                snapshot: None,
+                map: None,
+            })),
             Some(snapshot) => {
                 Ok(Response::new(FetchSnapshotResponse {
-                    result: Some(fetch_snapshot_response::Result::Some(snapshot.into())),
+                    snapshot: Some(snapshot.into()),
+                    map: None,
                 }))
             }
-        }
+        };
     }
 }

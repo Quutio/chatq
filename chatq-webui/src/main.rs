@@ -26,7 +26,7 @@ static COLOR_POOL: &[&str] = &[
 async fn fetch_snapshot() -> anyhow::Result<Snapshot> {
     let url = "http://localhost:3030".to_string();
 
-    let url = format!("{}/fetch-snapshot/1", url);
+    let url = format!("{}/fetch-snapshot/6fe0bbb0-96b4-4e5d-ac37-f516f3dd220e", url);
     let res = reqwest::get(&url).await?.json::<Snapshot>().await?;
 
     log::info!("{:?}", res);
@@ -161,10 +161,6 @@ fn MessageBox(cx: Scope) -> Element {
         HashSet::<String>::new()
     });
 
-    let uuid_users = use_future(cx, (), |_| async {
-
-    });
-
     cx.render(rsx! {
         div {
             class: "bg-gray-50 min-w-fit p-2 text-gray-800 dark:bg-zinc-900 font-mono text-sm p-2 rounded-lg dark:text-zinc-200",
@@ -172,10 +168,8 @@ fn MessageBox(cx: Scope) -> Element {
             match messages.value() {
                 Some(snap) => {
 
-
                     let taken = snap.taken.format("%Y-%m-%d %H:%M:%S").to_string();
                     let target = snap.target.to_string();
-
 
                     rsx! {
                         div {
@@ -194,7 +188,7 @@ fn MessageBox(cx: Scope) -> Element {
                             let props = MessageBarProps::from(msg);
                             rsx!(
                             div {
-                                class: "space-5",
+                                class: "space-2",
                                     MessageBar {
                                         author: props.author,
                                         content: props.content,
@@ -217,10 +211,8 @@ fn MessageBox(cx: Scope) -> Element {
 fn MessageBar(cx: Scope<MessageBarProps>) -> Element {
     let highlighted_users = use_shared_state::<HashSet<String>>(cx).unwrap();
 
-    // Determine if the author is highlighted
     let is_highlighted = highlighted_users.read().contains(&cx.props.author);
 
-    // Dynamic classes based on whether the author is highlighted
     let border_class = if is_highlighted {
         "border-l-4 border-lime-800 hover:scale-105"
     } else {
@@ -233,8 +225,6 @@ fn MessageBar(cx: Scope<MessageBarProps>) -> Element {
         "dark:bg-zinc-800"
     };
 
-
-    // Consolidate the rsx! block, only changing what's necessary based on the highlight
     cx.render(rsx! {
         div {
             class: "transition duration-150 ease-in-out bg-gray-50 text-gray-700 font-mono text-sm p-3 rounded-lg dark:text-zinc-200 mb-4 {border_class} {bg_class}",

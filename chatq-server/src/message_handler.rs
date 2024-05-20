@@ -4,9 +4,11 @@ use sqlx::postgres::PgConnectOptions;
 use sqlx::{ConnectOptions, PgPool};
 use std::str::FromStr;
 use tracing::log::LevelFilter;
+use ttl_cache::TtlCache;
 
 pub struct MessageHandler {
     pub db: ChatQDao,
+    pub cache: TtlCache<String, String>,
 }
 
 impl MessageHandler {
@@ -19,6 +21,9 @@ impl MessageHandler {
 
         let db = ChatQDao::with_pool(pool);
 
-        Ok(Self { db })
+        Ok(Self {
+            db,
+            cache: TtlCache::new(1024),
+        })
     }
 }

@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="AutoImportSettings">
-    <option name="autoReloadType" value="SELECTIVE" />
+    <option name="autoReloadType" value="ALL" />
   </component>
   <component name="CargoProjects">
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Progress further">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Add unique constraint to source_audiences table.">
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-gateway/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/src/message_handler.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/message_handler.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-types/src/data/message.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/message.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-webui/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,16 +52,20 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Cargo.Test chatq.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/multilanguage-projects/chatq/chatq-server&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/contrafatbots&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects.stats&quot;: &quot;true&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
@@ -134,7 +143,25 @@
       <workItem from="1710697063294" duration="875000" />
       <workItem from="1710787424658" duration="4068000" />
       <workItem from="1710793861936" duration="3437000" />
-      <workItem from="1710801539925" duration="10604000" />
+      <workItem from="1710801539925" duration="12728000" />
+      <workItem from="1710974937530" duration="1488000" />
+      <workItem from="1711005471232" duration="3688000" />
+      <workItem from="1711027738422" duration="1263000" />
+      <workItem from="1711135374164" duration="111000" />
+      <workItem from="1711135666165" duration="628000" />
+      <workItem from="1711136667260" duration="3821000" />
+      <workItem from="1711849310059" duration="12000" />
+      <workItem from="1711849400291" duration="36000" />
+      <workItem from="1712390232685" duration="2101000" />
+      <workItem from="1712437316441" duration="75000" />
+      <workItem from="1713642191594" duration="6382000" />
+      <workItem from="1715029609680" duration="15000" />
+      <workItem from="1716058066848" duration="4370000" />
+      <workItem from="1716063712007" duration="458000" />
+      <workItem from="1716064179161" duration="203000" />
+      <workItem from="1716064387231" duration="1984000" />
+      <workItem from="1716200307476" duration="16000" />
+      <workItem from="1716200462757" duration="16756000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -304,7 +331,23 @@
       <option name="project" value="LOCAL" />
       <updated>1710806733419</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="Apply linting">
+      <option name="closed" value="true" />
+      <created>1710823009707</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1710823009707</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Add unique constraint to source_audiences table.">
+      <option name="closed" value="true" />
+      <created>1716200656709</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1716200656709</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -329,6 +372,8 @@
     <MESSAGE value="Refactor gateway service" />
     <MESSAGE value="Tinker with webui" />
     <MESSAGE value="Progress further" />
-    <option name="LAST_COMMIT_MESSAGE" value="Progress further" />
+    <MESSAGE value="Apply linting" />
+    <MESSAGE value="Add unique constraint to source_audiences table." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add unique constraint to source_audiences table." />
   </component>
 </project>

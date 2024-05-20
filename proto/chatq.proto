@@ -15,10 +15,8 @@ service MessageHandler {
 }
 
 message FetchSnapshotResponse {
-  oneof result {
-    Snapshot some = 1;
-    google.protobuf.Empty none = 2;
-  }
+  Snapshot snapshot = 1;
+  NameUuidMap map = 2;
 }
 
 message SnapshotFetchRequest {
@@ -33,6 +31,15 @@ message GenerateSnapshotResponse {
 message SnapshotGenerateRequest {
   Uuid target = 1;
   MessageQueryPattern query = 2;
+}
+
+message NameUuidMap {
+  repeated NameUuidEntry entries = 1;
+}
+
+message NameUuidEntry {
+  string uuid = 1;
+  string name = 2;
 }
 
 message Snapshot {

@@ -53,10 +53,10 @@ pub struct Message {
 pub mod from_proto {
     use crate::chatq;
     use crate::data::error::ModelConversionError;
+    use crate::data::from_proto::{naive_from_proto, proto_from_naive};
     use crate::data::message::{Message, MessageAudience, MessageSource, MessageStub};
     use std::str::FromStr;
     use uuid::Uuid;
-    use crate::data::from_proto::{naive_from_proto, proto_from_naive};
 
     impl TryFrom<chatq::MessageSource> for MessageSource {
         type Error = ModelConversionError;
@@ -149,7 +149,10 @@ pub mod from_proto {
 
         fn try_from(f: chatq::MessageStub) -> Result<Self, Self::Error> {
             Ok(Self {
-                timestamp: naive_from_proto(f.timestamp.ok_or(ModelConversionError::ValueNotProvided("timestamp"))?)?,
+                timestamp: naive_from_proto(
+                    f.timestamp
+                        .ok_or(ModelConversionError::ValueNotProvided("timestamp"))?,
+                )?,
                 source: f
                     .source
                     .ok_or(ModelConversionError::ValueNotProvided("source"))?
@@ -170,7 +173,10 @@ pub mod from_proto {
         fn try_from(f: chatq::Message) -> Result<Self, Self::Error> {
             Ok(Self {
                 id: f.id,
-                timestamp: naive_from_proto(f.timestamp.ok_or(ModelConversionError::ValueNotProvided("timestamp"))?)?,
+                timestamp: naive_from_proto(
+                    f.timestamp
+                        .ok_or(ModelConversionError::ValueNotProvided("timestamp"))?,
+                )?,
                 source: f
                     .source
                     .ok_or(ModelConversionError::ValueNotProvided("source"))?

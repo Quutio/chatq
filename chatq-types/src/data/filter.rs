@@ -342,10 +342,7 @@ pub mod from_proto {
         fn try_from(value: message_filter::AudienceFilter) -> Result<Self, Self::Error> {
             let player = value
                 .player
-                .map(|op| {
-                    Uuid::from_str(&op.value)
-                        .map_err(ModelConversionError::UuidConversion)
-                })
+                .map(|op| Uuid::from_str(&op.value).map_err(ModelConversionError::UuidConversion))
                 .ok_or(ModelConversionError::ValueNotProvided("player"))??;
             Ok(AudienceFilter::Uuid(player))
         }
@@ -369,10 +366,7 @@ pub mod from_proto {
         fn try_from(value: message_filter::SourceFilter) -> Result<Self, Self::Error> {
             let player = value
                 .player
-                .map(|op| {
-                    Uuid::from_str(&op.value)
-                        .map_err(ModelConversionError::UuidConversion)
-                })
+                .map(|op| Uuid::from_str(&op.value).map_err(ModelConversionError::UuidConversion))
                 .ok_or(ModelConversionError::ValueNotProvided("player"))??;
             Ok(SourceFilter::Uuid(player))
         }

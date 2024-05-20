@@ -70,28 +70,20 @@ async fn fetch_snapshot(
 
     let result = result
         .into_inner()
-        .result
+        .snapshot
         .ok_or((StatusCode::NOT_FOUND, "not found".to_string()))?;
 
     println!("aa");
 
-    match result {
-        chatq_types::chatq::fetch_snapshot_response::Result::Some(snapshot) => {
-            let snapshot: Snapshot = snapshot.try_into().map_err(|err| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("snapshot invalid {}", err),
-                )
-            })?;
+    let snapshot: Snapshot = result.try_into().map_err(|err| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("snapshot invalid {}", err),
+        )
+    })?;
 
-            println!("bbb");
-
-            Ok(Json(snapshot))
-        }
-        chatq_types::chatq::fetch_snapshot_response::Result::None(_) => {
-            Err((StatusCode::NOT_FOUND, "not found".to_string()))
-        }
-    }
+    println!("bbb");
+    Ok(Json(snapshot))
 }
 
 #[derive(Clone)]

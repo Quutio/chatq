@@ -2,6 +2,7 @@ use crate::data::message::Message;
 use crate::data::query::MessageQueryPattern;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 pub mod error;
@@ -18,14 +19,43 @@ pub struct Snapshot {
     pub messages: Vec<Message>,
 }
 
+impl Snapshot {
+    pub fn uuids_present(&self) -> HashSet<&Uuid> {
+        let mut uuids = HashSet::new();
+
+        uuids.insert(&self.target);
+
+        let other: Vec<&Uuid> = self
+            .messages
+            .iter()
+            .flat_map(|x| {
+                x.audience
+                    .players()
+                    .into_iter()
+                    .chain(std::iter::once(x.source.player()))
+            })
+            .collect();
+
+        uuids.extend(other);
+
+        uuids
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct NameUuidMap {
+    pub inner: HashMap<String, String>,
+}
+
 #[cfg(feature = "proto")]
 mod from_proto {
     use crate::chatq;
     use crate::data::error::ModelConversionError;
     use crate::data::error::ModelConversionError::ValueNotProvided;
-    use crate::data::Snapshot;
+    use crate::data::{NameUuidMap, Snapshot};
     use chrono::{DateTime, NaiveDateTime};
     use prost_types::Timestamp;
+    use std::collections::HashMap;
     use uuid::Uuid;
 
     pub(crate) fn naive_from_proto(
@@ -40,6 +70,33 @@ mod from_proto {
         Timestamp {
             seconds: ts.and_utc().timestamp(),
             nanos: ts.and_utc().timestamp_subsec_nanos() as i32,
+        }
+    }
+
+    impl TryFrom<chatq::NameUuidMap> for NameUuidMap {
+        type Error = ModelConversionError;
+
+        fn try_from(value: chatq::NameUuidMap) -> Result<Self, Self::Error> {
+            let res = value
+                .entries
+                .into_iter()
+                .map(|x| (x.uuid, x.name))
+                .collect::<HashMap<String, String>>();
+            Ok(Self { inner: res })
+        }
+    }
+
+    impl From<NameUuidMap> for chatq::NameUuidMap {
+        fn from(value: NameUuidMap) -> Self {
+            let entries: Vec<chatq::NameUuidEntry> = value
+                .inner
+                .into_iter()
+                .map(|x| chatq::NameUuidEntry {
+                    uuid: x.0,
+                    name: x.1,
+                })
+                .collect();
+            Self { entries }
         }
     }
 
