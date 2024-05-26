@@ -24,19 +24,19 @@ impl Display for TimestampFilter {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
             TimestampFilter::Equals(ts) => {
-                write!(f, "= '{}'", ts)
+                write!(f, "messages.issued = '{}'", ts)
             }
             TimestampFilter::GreaterThan(ts) => {
-                write!(f, "> '{}'", ts)
+                write!(f, "messages.issued > '{}'", ts)
             }
             TimestampFilter::LessThan(ts) => {
-                write!(f, "< '{}'", ts)
+                write!(f, "messages.issued < '{}'", ts)
             }
             TimestampFilter::GreaterThanEqual(ts) => {
-                write!(f, ">= '{}'", ts)
+                write!(f, "messages.issued >= '{}'", ts)
             }
             TimestampFilter::LessThanEqual(ts) => {
-                write!(f, "<= '{}'", ts)
+                write!(f, "messages.issued <= '{}'", ts)
             }
         }
     }

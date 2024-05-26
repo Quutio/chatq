@@ -237,6 +237,18 @@ RETURNING id, snapshot_taken
         let restriction = query.filter.to_string();
         let limit = query.limit.to_string();
 
+        println!("{}", &format!(
+            r#"
+            SELECT messages.*
+            FROM messages
+            LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
+            LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
+            LEFT JOIN sources ON sources.id = messages.source_id
+            WHERE {} GROUP BY messages.id ORDER BY messages.issued {}
+            "#,
+            restriction, limit
+        ));
+        
         let all_messages = sqlx::query(&format!(
             r#"
             SELECT messages.*
@@ -244,7 +256,7 @@ RETURNING id, snapshot_taken
             LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
             LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
             LEFT JOIN sources ON sources.id = messages.source_id
-            WHERE {} GROUP BY messages.id {} ORDER BY messages.issued
+            WHERE {} GROUP BY messages.id ORDER BY messages.issued {}
             "#,
             restriction, limit
         ))
