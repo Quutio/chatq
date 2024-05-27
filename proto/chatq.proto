@@ -140,6 +140,17 @@ message MessageFilterPattern {
         google.protobuf.Timestamp less_than_equal = 5;
       }
     }
+    
+    message ContentFilter {
+      oneof condition {
+        string like = 1;
+        string i_like = 2;
+        string similar_to = 3;
+        string not_similar_to = 4;
+        string regexp = 5;
+        string not_regexp = 6;
+      }
+    }
 
     message AudienceFilter {
       Uuid player = 1;
@@ -158,6 +169,7 @@ message MessageFilterPattern {
       AudienceFilter audience = 2;
       SourceFilter source = 3;
       ContextFilter context = 4;
+      ContentFilter content = 5;
     }
   }
 

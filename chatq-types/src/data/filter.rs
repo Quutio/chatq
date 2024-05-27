@@ -1,5 +1,5 @@
 use std::fmt;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, write};
 
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
@@ -9,6 +9,40 @@ use super::message::Message;
 
 pub trait EvaluableFilter {
     fn evaluate(&self, message: &Message) -> bool;
+}
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub enum ContentFilter {
+    Like(String),
+    ILike(String),
+    SimilarTo(String),
+    NotSimilarTo(String),
+    Regexp(String),
+    NotRegexp(String),
+}
+
+impl Display for ContentFilter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ContentFilter::Like(left) => {
+                write!(f, "messages.content LIKE '{}'", left)
+            }
+            ContentFilter::ILike(left) => {
+                write!(f, "messages.content ILIKE '{}'", left)
+            }
+            ContentFilter::SimilarTo(left) => {
+                write!(f, "messages.content SIMILAR TO '{}'", left)
+            }
+            ContentFilter::NotSimilarTo(left) => {
+                write!(f, "messages.content NOT SIMILAR TO '{}'", left)
+            }
+            ContentFilter::Regexp(left) => {
+                write!(f, "messages.content ~ '{}'", left)
+            }
+            ContentFilter::NotRegexp(left) => {
+                write!(f, "messages.content !~ '{}'", left)
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -129,6 +163,7 @@ pub enum MessageFilter {
     Audience(AudienceFilter),
     Source(SourceFilter),
     Context(ContextFilter),
+    Content(ContentFilter),
 }
 
 impl Display for MessageFilter {
@@ -145,6 +180,9 @@ impl Display for MessageFilter {
             }
             MessageFilter::Context(context) => {
                 write!(f, "{}", context)
+            },
+            MessageFilter::Content(content) => {
+                write!(f, "{}", content)
             }
         }
     }
@@ -157,6 +195,7 @@ impl EvaluableFilter for MessageFilter {
             MessageFilter::Audience(filter) => filter.evaluate(message),
             MessageFilter::Source(filter) => filter.evaluate(message),
             MessageFilter::Context(filter) => filter.evaluate(message),
+            MessageFilter::Content(content) => unimplemented!(),
         }
     }
 }
@@ -261,40 +300,96 @@ pub mod from_proto {
     use crate::chatq;
     use crate::chatq::message_filter_pattern;
     use crate::data::error::ModelConversionError;
-    use crate::data::filter::{
-        AudienceFilter, CompositeFilter, ContextFilter, FilterItem, MessageFilter,
-        MessageFilterPattern, SourceFilter, TimestampFilter,
-    };
+    use crate::data::filter::{AudienceFilter, CompositeFilter, ContentFilter, ContextFilter, FilterItem, MessageFilter, MessageFilterPattern, SourceFilter, TimestampFilter};
     use std::str::FromStr;
     use uuid::Uuid;
 
     use crate::chatq::message_filter_pattern::composite_filter::filter_item::Type;
-    use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
     use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
     use crate::data::from_proto::{naive_from_proto, proto_from_naive};
 
+    impl From<ContentFilter> for message_filter::ContentFilter {
+        fn from(value: ContentFilter) -> Self {
+            message_filter::ContentFilter {
+                condition: Some(match value {
+                    ContentFilter::Like(left) => {
+                        message_filter::content_filter::Condition::Like(left)
+                    }
+                    ContentFilter::ILike(left) => {
+                        message_filter::content_filter::Condition::ILike(left)
+                    }
+                    ContentFilter::SimilarTo(left) => {
+                        message_filter::content_filter::Condition::SimilarTo(left)
+                    }
+                    ContentFilter::NotSimilarTo(left) => {
+                        message_filter::content_filter::Condition::NotSimilarTo(left)
+                    }
+                    ContentFilter::Regexp(left) => {
+                        message_filter::content_filter::Condition::Regexp(left)
+                    }
+                    ContentFilter::NotRegexp(left) => {
+                        message_filter::content_filter::Condition::NotRegexp(left)
+                    }
+                }),
+            }
+        }
+    }
+
+    impl TryFrom<message_filter::ContentFilter> for ContentFilter {
+        type Error = ModelConversionError;
+
+        fn try_from(value: message_filter::ContentFilter) -> Result<Self, Self::Error> {
+            use crate::chatq::message_filter_pattern::message_filter::content_filter::Condition;
+
+            match value.condition.ok_or(ModelConversionError::ValueNotProvided("content filter"))? {
+                Condition::Like(left) => {
+                    Ok(Self::Like(left))
+                }
+                Condition::ILike(left) => {
+                    Ok(Self::ILike(left))
+                }
+                Condition::SimilarTo(left) => {
+                    Ok(Self::SimilarTo(left))
+                }
+                Condition::NotSimilarTo(left) => {
+                    Ok(Self::NotSimilarTo(left))
+                }
+                Condition::Regexp(left) => {
+                    Ok(Self::Regexp(left))
+                }
+                Condition::NotRegexp(left) => {
+                    Ok(Self::NotRegexp(left))
+                }
+            }
+        }
+    }
+
     impl From<TimestampFilter> for message_filter::TimestampFilter {
         fn from(value: TimestampFilter) -> Self {
+
+            use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
+
+
             message_filter::TimestampFilter {
                 condition: Some(match value {
                     TimestampFilter::Equals(ts) => {
-                        message_filter::timestamp_filter::Condition::Equals(proto_from_naive(ts))
+                        Condition::Equals(proto_from_naive(ts))
                     }
                     TimestampFilter::GreaterThan(ts) => {
-                        message_filter::timestamp_filter::Condition::GreaterThan(proto_from_naive(
+                        Condition::GreaterThan(proto_from_naive(
                             ts,
                         ))
                     }
                     TimestampFilter::LessThan(ts) => {
-                        message_filter::timestamp_filter::Condition::LessThan(proto_from_naive(ts))
+                        Condition::LessThan(proto_from_naive(ts))
                     }
                     TimestampFilter::GreaterThanEqual(ts) => {
-                        message_filter::timestamp_filter::Condition::GreaterThanEqual(
+                        Condition::GreaterThanEqual(
                             proto_from_naive(ts),
                         )
                     }
                     TimestampFilter::LessThanEqual(ts) => {
-                        message_filter::timestamp_filter::Condition::LessThanEqual(
+                        Condition::LessThanEqual(
                             proto_from_naive(ts),
                         )
                     }
@@ -309,6 +404,10 @@ pub mod from_proto {
         fn try_from(
             value: chatq::message_filter_pattern::message_filter::TimestampFilter,
         ) -> Result<Self, Self::Error> {
+
+            use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
+
+
             match value
                 .condition
                 .ok_or(ModelConversionError::ValueNotProvided("condition"))?
@@ -440,6 +539,13 @@ pub mod from_proto {
                         ),
                     ),
                 },
+                MessageFilter::Content(content) => message_filter_pattern::MessageFilter {
+                    condition: Some(
+                        chatq::message_filter_pattern::message_filter::Condition::Content(
+                            content.into()
+                        )
+                    )
+                }
             }
         }
     }
@@ -463,6 +569,9 @@ pub mod from_proto {
                 }
                 message_filter_pattern::message_filter::Condition::Context(context) => {
                     Ok(Self::Context(context.try_into()?))
+                }
+                message_filter_pattern::message_filter::Condition::Content(content) => {
+                    Ok(Self::Content(content.try_into()?))
                 }
             }
         }

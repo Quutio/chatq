@@ -7,10 +7,11 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Add unique constraint to source_audiences table.">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Improve querying">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -153,6 +154,9 @@
       <workItem from="1716064387231" duration="1984000" />
       <workItem from="1716200307476" duration="16000" />
       <workItem from="1716200462757" duration="16756000" />
+      <workItem from="1716687394526" duration="686000" />
+      <workItem from="1716688087994" duration="9509000" />
+      <workItem from="1716828417281" duration="2308000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -338,7 +342,15 @@
       <option name="project" value="LOCAL" />
       <updated>1716200656709</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="Improve querying">
+      <option name="closed" value="true" />
+      <created>1716685934302</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1716685934302</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -365,6 +377,7 @@
     <MESSAGE value="Progress further" />
     <MESSAGE value="Apply linting" />
     <MESSAGE value="Add unique constraint to source_audiences table." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add unique constraint to source_audiences table." />
+    <MESSAGE value="Improve querying" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improve querying" />
   </component>
 </project>
