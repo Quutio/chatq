@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use chrono::NaiveDateTime;
 use sqlx::postgres::PgRow;
-use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction};
+use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction, QueryBuilder, Execute};
 use uuid::Uuid;
+use chatq_types::data::filter::query::Queryable;
 use chatq_types::data::filter::to_player_seq;
 
 use chatq_types::data::message::{Message, MessageAudience, MessageSource, MessageStub};
@@ -227,34 +228,23 @@ RETURNING id, snapshot_taken
     where
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
-        let restriction = query.filter.to_string();
-        let limit = query.limit.to_string();
-
-        println!("{}", &format!(
-            r#"
-            SELECT messages.*
+        let mut builder = QueryBuilder::new(r#"
+        SELECT messages.*
             FROM messages
             LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
             LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
             LEFT JOIN sources ON sources.id = messages.source_id
             LEFT JOIN audiences ON audiences.id = source_audiences.audience_id
-            WHERE {} GROUP BY messages.id ORDER BY messages.issued DESC {}
-            "#,
-            restriction, limit
-        ));
+        "#);
         
-        let all_messages = sqlx::query(&format!(
-            r#"
-            SELECT messages.*
-            FROM messages
-            LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
-            LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
-            LEFT JOIN sources ON sources.id = messages.source_id
-            LEFT JOIN audiences ON audiences.id = source_audiences.audience_id
-            WHERE {} GROUP BY messages.id ORDER BY messages.issued DESC {}
-            "#,
-            restriction, limit
-        ))
+        builder.push(" WHERE ");
+        query.filter.append_query(&mut builder);
+        builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
+        query.limit.append_query(&mut builder);
+        
+        println!("{}", builder.sql());
+
+        let all_messages = builder.build()
             .map(|row: PgRow| {
                 let message_id: i64 = row.get("id");
                 let issued: NaiveDateTime = row.get("issued");

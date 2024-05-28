@@ -1,5 +1,5 @@
 use std::fmt;
-use std::fmt::{Display, format, Formatter, write};
+use std::fmt::{Display, Formatter};
 
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,7 @@ use super::message::Message;
 pub trait EvaluableFilter {
     fn evaluate(&self, message: &Message) -> bool;
 }
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum ContentFilter {
     Like(String),
@@ -18,6 +19,248 @@ pub enum ContentFilter {
     NotSimilarTo(String),
     Regexp(String),
     NotRegexp(String),
+}
+
+#[cfg(feature = "proto")]
+pub mod query {
+    use sqlx::{Database, Postgres, QueryBuilder};
+    use uuid::Uuid;
+    use crate::data::filter::{AudienceFilter, CompositeFilter, ContentFilter, ContextFilter, FilterItem, MessageFilter, MessageFilterPattern, SourceFilter, TimestampFilter, to_player_seq};
+    use crate::data::query::Limit;
+
+    pub trait Queryable<DB: Database> {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, DB>);
+    }
+
+    impl<'args> Queryable<Postgres> for ContentFilter
+    where {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                ContentFilter::Like(pattern) => {
+                    builder
+                        .push("messages.content LIKE ")
+                        .push_bind(pattern.to_string());
+                }
+                ContentFilter::ILike(pattern) => {
+                    builder
+                        .push("messages.content ILIKE ")
+                        .push_bind(pattern.to_string());
+                }
+                ContentFilter::SimilarTo(pattern) => {
+                    builder
+                        .push("messages.content SIMILAR TO ")
+                        .push_bind(pattern.to_string());
+                }
+                ContentFilter::NotSimilarTo(pattern) => {
+                    builder
+                        .push("messages.content NOT SIMILAR TO ")
+                        .push_bind(pattern.to_string());
+                }
+                ContentFilter::Regexp(pattern) => {
+                    builder
+                        .push("messages.content ~ ")
+                        .push_bind(pattern.to_string());
+                }
+                ContentFilter::NotRegexp(pattern) => {
+                    builder
+                        .push("messages.content !~ ")
+                        .push_bind(pattern.to_string());
+                }
+            }
+        }
+    }
+
+    impl<'args> Queryable<Postgres> for TimestampFilter {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                TimestampFilter::Equals(ts) => {
+                    builder
+                        .push("messages.issued = ")
+                        .push_bind(ts.clone());
+                }
+                TimestampFilter::GreaterThan(ts) => {
+                    builder
+                        .push("messages.issued > ")
+                        .push_bind(ts.clone());
+                }
+                TimestampFilter::LessThan(ts) => {
+                    builder
+                        .push("messages.issued < ")
+                        .push_bind(ts.clone());
+                }
+                TimestampFilter::GreaterThanEqual(ts) => {
+                    builder
+                        .push("messages.issued >= ")
+                        .push_bind(ts.clone());
+                }
+                TimestampFilter::LessThanEqual(ts) => {
+                    builder
+                        .push("messages.issued <= ")
+                        .push_bind(ts.clone());
+                }
+            }
+        }
+    }
+
+    impl<'args> Queryable<Postgres> for AudienceFilter {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                AudienceFilter::Uuid(uuid) => {
+                    builder
+                        .push("audience_sources.uuid = ")
+                        .push_bind(uuid.clone());
+                }
+            }
+        }
+    }
+
+    impl<'args> Queryable<Postgres> for SourceFilter {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                SourceFilter::Uuid(uuid) => {
+                    builder
+                        .push("sources.uuid = ")
+                        .push_bind(uuid.clone());
+                }
+            }
+        }
+    }
+
+    impl<'args> Queryable<Postgres> for ContextFilter {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                ContextFilter::Context(context) => {
+                    builder
+                        .push("messages.context = ")
+                        .push_bind(context.to_string());
+                }
+            }
+        }
+    }
+
+    impl<'args> Queryable<Postgres> for FilterItem {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                FilterItem::Single(single) => {
+                    single.append_query(builder)
+                }
+                FilterItem::Composite(composite) => {
+                    composite.append_query(builder)
+                }
+            }
+        }
+    }
+
+    impl<'args> Queryable<Postgres> for MessageFilter {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                MessageFilter::InsertTimestamp(ts) => {
+                    ts.append_query(builder)
+                }
+                MessageFilter::Audience(audience) => {
+                    audience.append_query(builder)
+                }
+                MessageFilter::Source(source) => {
+                    source.append_query(builder)
+                }
+                MessageFilter::Context(context) => {
+                    context.append_query(builder)
+                }
+                MessageFilter::Content(content) => {
+                    content.append_query(builder)
+                }
+            }
+        }
+    }
+
+    impl<'args> Queryable<Postgres> for CompositeFilter {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                CompositeFilter::Or(items) => {
+                    builder.push("( " );
+                    for (index, filter) in items.iter().enumerate() {
+                        if index > 0 {
+                            builder.push(" OR ");
+                        }
+                        filter.append_query(builder);
+                    };
+                    builder.push(" )");
+                }
+                CompositeFilter::And(items) => {
+                    let mut others: Vec<&FilterItem> = Vec::new();
+                    let mut audiences: Vec<Uuid> = Vec::new();
+
+                    for item in items {
+                        match item {
+                            FilterItem::Single(single) => {
+                                match single {
+                                    MessageFilter::Audience(audience) => {
+                                        match audience { AudienceFilter::Uuid(uuid) => {
+                                            audiences.push(uuid.clone());
+                                        } }
+                                    }
+                                    _ => {
+                                        others.push(item);
+                                    }
+                                }
+                            }
+                            FilterItem::Composite(_) => {
+                                others.push(item);
+                            }
+                        }
+                    }
+
+                    builder.push("( ");
+
+                    if !audiences.is_empty() {
+                        builder.push("audiences.users_hash = MD5(");
+                        builder.push_bind(to_player_seq(&audiences));
+                        builder.push(") ");
+                    }
+
+                    for (index, filter) in others.iter().enumerate() {
+                        if index > 0 {
+                            builder.push(" AND ");
+                        }
+                        filter.append_query(builder);
+                    }
+
+                    builder.push(" )");
+                }
+                CompositeFilter::Not(item) => {
+                    builder.push("( ");
+                    builder.push("NOT ");
+                    item.append_query(builder);
+                    builder.push(" )");
+                }
+            }
+        }
+    }
+
+    impl<'args> Queryable<Postgres> for MessageFilterPattern {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                MessageFilterPattern::Single(single) => {
+                    single.append_query(builder);
+                }
+                MessageFilterPattern::Composite(composite) => {
+                    composite.append_query(builder);
+                }
+            }
+        }
+    }
+    
+    impl<'args> Queryable<Postgres> for Limit {
+        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+            match self {
+                Limit::All => {}
+                Limit::Amount(amount) => {
+                    builder.push(" LIMIT ");
+                    builder.push_bind(amount.clone());
+                }
+            }
+        }
+    }
 }
 
 impl Display for ContentFilter {
@@ -241,7 +484,7 @@ impl Display for CompositeFilter {
             CompositeFilter::And(items) => {
                 let mut others: Vec<&FilterItem> = Vec::new();
                 let mut audiences: Vec<Uuid> = Vec::new();
-                
+
                 for item in items {
                     match item {
                         FilterItem::Single(single_filter) => {
@@ -261,15 +504,15 @@ impl Display for CompositeFilter {
                         }
                     }
                 }
-                
+
                 let mut joined = others
                     .iter()
                     .map(|item| item.to_string()).collect::<Vec<_>>();
-                
+
                 if !audiences.is_empty() {
                     joined.push(format!("audiences.users_hash = MD5('{}')", to_player_seq(&audiences)))
                 }
-                
+
                 write!(f, "{}", joined.join(" AND "))
             }
             CompositeFilter::Not(item) => write!(f, "NOT {}", item),
