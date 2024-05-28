@@ -4,6 +4,7 @@ use chrono::NaiveDateTime;
 use sqlx::postgres::PgRow;
 use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction};
 use uuid::Uuid;
+use chatq_types::data::filter::to_player_seq;
 
 use chatq_types::data::message::{Message, MessageAudience, MessageSource, MessageStub};
 use chatq_types::data::query::MessageQueryPattern;
@@ -27,16 +28,8 @@ impl ChatQDao {
     {
         let audience = &stub.audience;
 
-        let mut players = audience.players().clone();
-        players.sort();
-
-        let padded: String = players
-            .into_iter()
-            .map(|op| op.to_string())
-            .collect::<Vec<_>>()
-            .join("|");
-
         let players = audience.players();
+        let padded = to_player_seq(audience.players());
 
         let audience_id = sqlx::query!(
             r#"
@@ -244,6 +237,7 @@ RETURNING id, snapshot_taken
             LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
             LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
             LEFT JOIN sources ON sources.id = messages.source_id
+            LEFT JOIN audiences ON audiences.id = source_audiences.audience_id
             WHERE {} GROUP BY messages.id ORDER BY messages.issued DESC {}
             "#,
             restriction, limit
@@ -256,6 +250,7 @@ RETURNING id, snapshot_taken
             LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
             LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
             LEFT JOIN sources ON sources.id = messages.source_id
+            LEFT JOIN audiences ON audiences.id = source_audiences.audience_id
             WHERE {} GROUP BY messages.id ORDER BY messages.issued DESC {}
             "#,
             restriction, limit

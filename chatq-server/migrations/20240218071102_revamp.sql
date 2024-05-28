@@ -16,8 +16,9 @@ CREATE TABLE sources
 CREATE TABLE source_audiences
 (
     id          bigserial PRIMARY KEY,
-    source_id   bigint UNIQUE NOT NULL REFERENCES sources (id),
-    audience_id bigint UNIQUE NOT NULL REFERENCES audiences (id)
+    source_id   bigint NOT NULL REFERENCES sources (id),
+    audience_id bigint NOT NULL REFERENCES audiences (id),
+    UNIQUE (source_id, audience_id)
 );
 
 CREATE TABLE messages

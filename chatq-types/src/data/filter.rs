@@ -1,5 +1,5 @@
 use std::fmt;
-use std::fmt::{Display, Formatter, write};
+use std::fmt::{Display, format, Formatter, write};
 
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
@@ -74,6 +74,17 @@ impl Display for TimestampFilter {
             }
         }
     }
+}
+
+pub fn to_player_seq(uuids: &Vec<Uuid>) -> String {
+    let mut players = uuids.clone();
+    players.sort();
+
+    players
+        .into_iter()
+        .map(|op| op.to_string())
+        .collect::<Vec<_>>()
+        .join("|")
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -228,12 +239,38 @@ impl Display for CompositeFilter {
                 write!(f, "{}", joined)
             }
             CompositeFilter::And(items) => {
-                let joined = items
+                let mut others: Vec<&FilterItem> = Vec::new();
+                let mut audiences: Vec<Uuid> = Vec::new();
+                
+                for item in items {
+                    match item {
+                        FilterItem::Single(single_filter) => {
+                            match single_filter {
+                                MessageFilter::Audience(audience) => {
+                                    match audience { AudienceFilter::Uuid(uuid) => {
+                                        audiences.push(uuid.clone());
+                                    }}
+                                }
+                                _ => {
+                                    others.push(item);
+                                }
+                            }
+                        }
+                        FilterItem::Composite(_) => {
+                            others.push(item)
+                        }
+                    }
+                }
+                
+                let mut joined = others
                     .iter()
-                    .map(|item| item.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" AND ");
-                write!(f, "{}", joined)
+                    .map(|item| item.to_string()).collect::<Vec<_>>();
+                
+                if !audiences.is_empty() {
+                    joined.push(format!("audiences.users_hash = MD5('{}')", to_player_seq(&audiences)))
+                }
+                
+                write!(f, "{}", joined.join(" AND "))
             }
             CompositeFilter::Not(item) => write!(f, "NOT {}", item),
         }
