@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+#![allow(dead_code)]
 
 use std::collections::{HashSet};
 use chatq_types::data::Snapshot;
@@ -7,7 +8,7 @@ use chatq_types::data::message::Message;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-static COLOR_POOL: &[&str] = &[
+pub static COLOR_POOL: &[&str] = &[
     "amber-800",
     "yellow-800",
     "lime-800",
@@ -100,13 +101,13 @@ struct Variables {
 
 #[derive(Deserialize)]
 struct User {
-    uniqueId: String,
-    username: String,
+    _uniqueId: String,
+    _username: String,
 }
 
 #[derive(Deserialize)]
 struct UsersResponse {
-    users: Vec<User>,
+    _users: Vec<User>,
 }
 
 #[derive(Deserialize)]
@@ -144,7 +145,7 @@ async fn uuid_to_username(uuids: Vec<String>) -> anyhow::Result<UsersResponse> {
 fn MessageBox(cx: Scope) -> Element {
     let messages = use_future(&cx, (), |_| async {
         //let mut map = HashMap::new();
-        let messages = fetch_snapshot().await.unwrap();
+        fetch_snapshot().await.unwrap()
 
         //let uuids: Vec<String> = messages.messages.iter().map(|op| op.source.player().to_string()).collect();
 
@@ -153,8 +154,6 @@ fn MessageBox(cx: Scope) -> Element {
         //for user in users {
         //    map.insert(user.uniqueId, user.username);
         //}
-
-        messages
     });
 
     use_shared_state_provider(cx, || {

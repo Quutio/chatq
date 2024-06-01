@@ -32,7 +32,7 @@ pub mod query {
         fn append_query(&self, builder: &mut QueryBuilder<'_, DB>);
     }
 
-    impl<'args> Queryable<Postgres> for ContentFilter
+    impl Queryable<Postgres> for ContentFilter
     where {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
@@ -70,63 +70,63 @@ pub mod query {
         }
     }
 
-    impl<'args> Queryable<Postgres> for TimestampFilter {
+    impl Queryable<Postgres> for TimestampFilter {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 TimestampFilter::Equals(ts) => {
                     builder
                         .push("messages.issued = ")
-                        .push_bind(ts.clone());
+                        .push_bind(*ts);
                 }
                 TimestampFilter::GreaterThan(ts) => {
                     builder
                         .push("messages.issued > ")
-                        .push_bind(ts.clone());
+                        .push_bind(*ts);
                 }
                 TimestampFilter::LessThan(ts) => {
                     builder
                         .push("messages.issued < ")
-                        .push_bind(ts.clone());
+                        .push_bind(*ts);
                 }
                 TimestampFilter::GreaterThanEqual(ts) => {
                     builder
                         .push("messages.issued >= ")
-                        .push_bind(ts.clone());
+                        .push_bind(*ts);
                 }
                 TimestampFilter::LessThanEqual(ts) => {
                     builder
                         .push("messages.issued <= ")
-                        .push_bind(ts.clone());
+                        .push_bind(*ts);
                 }
             }
         }
     }
 
-    impl<'args> Queryable<Postgres> for AudienceFilter {
+    impl Queryable<Postgres> for AudienceFilter {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 AudienceFilter::Uuid(uuid) => {
                     builder
                         .push("audience_sources.uuid = ")
-                        .push_bind(uuid.clone());
+                        .push_bind(*uuid);
                 }
             }
         }
     }
 
-    impl<'args> Queryable<Postgres> for SourceFilter {
+    impl Queryable<Postgres> for SourceFilter {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 SourceFilter::Uuid(uuid) => {
                     builder
                         .push("sources.uuid = ")
-                        .push_bind(uuid.clone());
+                        .push_bind(*uuid);
                 }
             }
         }
     }
 
-    impl<'args> Queryable<Postgres> for ContextFilter {
+    impl Queryable<Postgres> for ContextFilter {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 ContextFilter::Context(context) => {
@@ -138,7 +138,7 @@ pub mod query {
         }
     }
 
-    impl<'args> Queryable<Postgres> for FilterItem {
+    impl Queryable<Postgres> for FilterItem {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 FilterItem::Single(single) => {
@@ -151,7 +151,7 @@ pub mod query {
         }
     }
 
-    impl<'args> Queryable<Postgres> for MessageFilter {
+    impl Queryable<Postgres> for MessageFilter {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 MessageFilter::InsertTimestamp(ts) => {
@@ -173,7 +173,7 @@ pub mod query {
         }
     }
 
-    impl<'args> Queryable<Postgres> for CompositeFilter {
+    impl Queryable<Postgres> for CompositeFilter {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 CompositeFilter::Or(items) => {
@@ -196,7 +196,7 @@ pub mod query {
                                 match single {
                                     MessageFilter::Audience(audience) => {
                                         match audience { AudienceFilter::Uuid(uuid) => {
-                                            audiences.push(uuid.clone());
+                                            audiences.push(*uuid);
                                         } }
                                     }
                                     _ => {
@@ -217,7 +217,7 @@ pub mod query {
                         builder.push_bind(to_player_seq(&audiences));
                         builder.push(") ");
                         
-                        if others.len() > 0 {
+                        if !others.is_empty() {
                             builder.push("AND ");
                         }
                     }
@@ -241,7 +241,7 @@ pub mod query {
         }
     }
 
-    impl<'args> Queryable<Postgres> for MessageFilterPattern {
+    impl Queryable<Postgres> for MessageFilterPattern {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 MessageFilterPattern::Single(single) => {
@@ -254,13 +254,13 @@ pub mod query {
         }
     }
     
-    impl<'args> Queryable<Postgres> for Limit {
+    impl Queryable<Postgres> for Limit {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 Limit::All => {}
                 Limit::Amount(amount) => {
                     builder.push(" LIMIT ");
-                    builder.push_bind(amount.clone());
+                    builder.push_bind(*amount);
                 }
             }
         }
@@ -323,8 +323,8 @@ impl Display for TimestampFilter {
     }
 }
 
-pub fn to_player_seq(uuids: &Vec<Uuid>) -> String {
-    let mut players = uuids.clone();
+pub fn to_player_seq(uuids: &[Uuid]) -> String {
+    let mut players = uuids.to_owned();
     players.sort();
 
     players
@@ -453,7 +453,7 @@ impl EvaluableFilter for MessageFilter {
             MessageFilter::Audience(filter) => filter.evaluate(message),
             MessageFilter::Source(filter) => filter.evaluate(message),
             MessageFilter::Context(filter) => filter.evaluate(message),
-            MessageFilter::Content(content) => unimplemented!(),
+            MessageFilter::Content(_content) => unimplemented!(),
         }
     }
 }
@@ -495,7 +495,7 @@ impl Display for CompositeFilter {
                             match single_filter {
                                 MessageFilter::Audience(audience) => {
                                     match audience { AudienceFilter::Uuid(uuid) => {
-                                        audiences.push(uuid.clone());
+                                        audiences.push(*uuid);
                                     }}
                                 }
                                 _ => {
@@ -867,8 +867,7 @@ pub mod from_proto {
         fn try_from(
             value: chatq::message_filter_pattern::CompositeFilter,
         ) -> Result<Self, Self::Error> {
-            match Operation::from_i32(value.operation)
-                .ok_or(ModelConversionError::ValueNotProvided("operation"))?
+            match value.operation()
             {
                 Operation::And => Ok(Self::And(
                     value

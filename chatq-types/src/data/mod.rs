@@ -31,7 +31,7 @@ impl Snapshot {
             .flat_map(|x| {
                 x.audience
                     .players()
-                    .into_iter()
+                    .iter()
                     .chain(std::iter::once(x.source.player()))
             })
             .collect();

@@ -50,6 +50,7 @@ impl GrpcMessageHandler {
 
 #[async_trait]
 impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
+    
     async fn insert_messages(
         &self,
         request: Request<MessageInsertRequest>,

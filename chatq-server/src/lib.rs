@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use chrono::NaiveDateTime;
 use sqlx::postgres::PgRow;
-use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction, QueryBuilder, Execute};
+use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction, QueryBuilder};
 use uuid::Uuid;
 use chatq_types::data::filter::query::Queryable;
 use chatq_types::data::filter::to_player_seq;
