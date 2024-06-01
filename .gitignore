@@ -1,2 +1,10 @@
 /target
 /.vscode/
+/chatq-webui/dist/assets/dioxus/CHATq.js
+/chatq-webui/dist/assets/dioxus/CHATq_bg.wasm
+/chatq-webui/dist/assets/dioxus/snippets/dioxus-interpreter-js-85a0a2f8acce2e86/src/common.js
+/chatq-webui/dist/assets/dioxus/snippets/dioxus-web-a95d8cc6c91ff8eb/src/eval.js
+/chatq-webui/dist/index.html
+/chatq-webui/dist/assets/dioxus/snippets/dioxus-interpreter-js-85a0a2f8acce2e86/inline0.js
+/chatq-webui/dist/assets/dioxus/snippets/dioxus-web-a95d8cc6c91ff8eb/inline0.js
+/chatq-webui/dist/tailwind.css
