@@ -216,6 +216,10 @@ pub mod query {
                         builder.push("audiences.users_hash = MD5(");
                         builder.push_bind(to_player_seq(&audiences));
                         builder.push(") ");
+                        
+                        if others.len() > 0 {
+                            builder.push("AND ");
+                        }
                     }
 
                     for (index, filter) in others.iter().enumerate() {
