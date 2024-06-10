@@ -10,8 +10,8 @@ anyhow = "1.0.80"
 axum = "0.7.4"
 chatq-types = { version = "0.1.0", path = "../chatq-types", features = ["proto"] }
 tokio = { version = "1.36.0", features = ["full"] }
-tonic = "0.6"
-prost = "0.9"
+tonic = "0.11.0"
+prost = "0.12.6"
 nanoid = "0.4.0"
 dotenvy = "0.15.7"
 serde = { version = "1.0.197", features = ["derive"] }
@@ -19,6 +19,6 @@ uuid = { version = "1.7.0", features = ["serde"] }
 tower-http = { version = "0.5.2", features = ["cors"] }
 
 [build-dependencies]
-tonic-build = "0.6"
+tonic-build = "0.11.0"
 
 

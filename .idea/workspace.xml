@@ -7,17 +7,10 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Modify .gitignore">
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Bump dependency versions and satisfy Clippy">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-webui/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -167,7 +160,8 @@
       <workItem from="1717189402298" duration="15779000" />
       <workItem from="1717236526640" duration="4604000" />
       <workItem from="1717253309494" duration="980000" />
-      <workItem from="1717254294718" duration="810000" />
+      <workItem from="1717254294718" duration="2173000" />
+      <workItem from="1717987108738" duration="358000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -401,7 +395,15 @@
       <option name="project" value="LOCAL" />
       <updated>1717236816120</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="Bump dependency versions and satisfy Clippy">
+      <option name="closed" value="true" />
+      <created>1717255510297</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1717255510297</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -432,6 +434,7 @@
     <MESSAGE value="Progress further" />
     <MESSAGE value="Improve SQL queries" />
     <MESSAGE value="Modify .gitignore" />
-    <option name="LAST_COMMIT_MESSAGE" value="Modify .gitignore" />
+    <MESSAGE value="Bump dependency versions and satisfy Clippy" />
+    <option name="LAST_COMMIT_MESSAGE" value="Bump dependency versions and satisfy Clippy" />
   </component>
 </project>
