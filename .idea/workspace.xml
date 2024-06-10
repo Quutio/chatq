@@ -7,10 +7,10 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Bump dependency versions and satisfy Clippy">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Bump missed dependency versions on gateway">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/query.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/query.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +25,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="dev" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MacroExpansionManager">
@@ -47,7 +52,7 @@
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/query-pagination&quot;,
     &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/rust-projects/markovtoy&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -161,7 +166,8 @@
       <workItem from="1717236526640" duration="4604000" />
       <workItem from="1717253309494" duration="980000" />
       <workItem from="1717254294718" duration="2173000" />
-      <workItem from="1717987108738" duration="358000" />
+      <workItem from="1717987108738" duration="4731000" />
+      <workItem from="1717994257184" duration="2701000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -403,14 +409,21 @@
       <option name="project" value="LOCAL" />
       <updated>1717255510297</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="Bump missed dependency versions on gateway">
+      <option name="closed" value="true" />
+      <created>1717987491430</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1717987491430</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Rename things" />
     <MESSAGE value="Restructure parts" />
     <MESSAGE value="Progress types." />
     <MESSAGE value="Make server impl use common proto-types." />
@@ -435,6 +448,7 @@
     <MESSAGE value="Improve SQL queries" />
     <MESSAGE value="Modify .gitignore" />
     <MESSAGE value="Bump dependency versions and satisfy Clippy" />
-    <option name="LAST_COMMIT_MESSAGE" value="Bump dependency versions and satisfy Clippy" />
+    <MESSAGE value="Bump missed dependency versions on gateway" />
+    <option name="LAST_COMMIT_MESSAGE" value="Bump missed dependency versions on gateway" />
   </component>
 </project>

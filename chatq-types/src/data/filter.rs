@@ -23,17 +23,19 @@ pub enum ContentFilter {
 
 #[cfg(feature = "proto")]
 pub mod query {
+    use crate::data::filter::{
+        to_player_seq, AudienceFilter, CompositeFilter, ContentFilter, ContextFilter, FilterItem,
+        MessageFilter, MessageFilterPattern, SourceFilter, TimestampFilter,
+    };
+    use crate::data::query::Limit;
     use sqlx::{Database, Postgres, QueryBuilder};
     use uuid::Uuid;
-    use crate::data::filter::{AudienceFilter, CompositeFilter, ContentFilter, ContextFilter, FilterItem, MessageFilter, MessageFilterPattern, SourceFilter, TimestampFilter, to_player_seq};
-    use crate::data::query::Limit;
 
     pub trait Queryable<DB: Database> {
         fn append_query(&self, builder: &mut QueryBuilder<'_, DB>);
     }
 
-    impl Queryable<Postgres> for ContentFilter
-    where {
+    impl Queryable<Postgres> for ContentFilter {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 ContentFilter::Like(pattern) => {
@@ -74,29 +76,19 @@ pub mod query {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 TimestampFilter::Equals(ts) => {
-                    builder
-                        .push("messages.issued = ")
-                        .push_bind(*ts);
+                    builder.push("messages.issued = ").push_bind(*ts);
                 }
                 TimestampFilter::GreaterThan(ts) => {
-                    builder
-                        .push("messages.issued > ")
-                        .push_bind(*ts);
+                    builder.push("messages.issued > ").push_bind(*ts);
                 }
                 TimestampFilter::LessThan(ts) => {
-                    builder
-                        .push("messages.issued < ")
-                        .push_bind(*ts);
+                    builder.push("messages.issued < ").push_bind(*ts);
                 }
                 TimestampFilter::GreaterThanEqual(ts) => {
-                    builder
-                        .push("messages.issued >= ")
-                        .push_bind(*ts);
+                    builder.push("messages.issued >= ").push_bind(*ts);
                 }
                 TimestampFilter::LessThanEqual(ts) => {
-                    builder
-                        .push("messages.issued <= ")
-                        .push_bind(*ts);
+                    builder.push("messages.issued <= ").push_bind(*ts);
                 }
             }
         }
@@ -106,9 +98,7 @@ pub mod query {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 AudienceFilter::Uuid(uuid) => {
-                    builder
-                        .push("audience_sources.uuid = ")
-                        .push_bind(*uuid);
+                    builder.push("audience_sources.uuid = ").push_bind(*uuid);
                 }
             }
         }
@@ -118,9 +108,7 @@ pub mod query {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 SourceFilter::Uuid(uuid) => {
-                    builder
-                        .push("sources.uuid = ")
-                        .push_bind(*uuid);
+                    builder.push("sources.uuid = ").push_bind(*uuid);
                 }
             }
         }
@@ -141,12 +129,8 @@ pub mod query {
     impl Queryable<Postgres> for FilterItem {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
-                FilterItem::Single(single) => {
-                    single.append_query(builder)
-                }
-                FilterItem::Composite(composite) => {
-                    composite.append_query(builder)
-                }
+                FilterItem::Single(single) => single.append_query(builder),
+                FilterItem::Composite(composite) => composite.append_query(builder),
             }
         }
     }
@@ -154,21 +138,11 @@ pub mod query {
     impl Queryable<Postgres> for MessageFilter {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
-                MessageFilter::InsertTimestamp(ts) => {
-                    ts.append_query(builder)
-                }
-                MessageFilter::Audience(audience) => {
-                    audience.append_query(builder)
-                }
-                MessageFilter::Source(source) => {
-                    source.append_query(builder)
-                }
-                MessageFilter::Context(context) => {
-                    context.append_query(builder)
-                }
-                MessageFilter::Content(content) => {
-                    content.append_query(builder)
-                }
+                MessageFilter::InsertTimestamp(ts) => ts.append_query(builder),
+                MessageFilter::Audience(audience) => audience.append_query(builder),
+                MessageFilter::Source(source) => source.append_query(builder),
+                MessageFilter::Context(context) => context.append_query(builder),
+                MessageFilter::Content(content) => content.append_query(builder),
             }
         }
     }
@@ -177,13 +151,13 @@ pub mod query {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
                 CompositeFilter::Or(items) => {
-                    builder.push("( " );
+                    builder.push("( ");
                     for (index, filter) in items.iter().enumerate() {
                         if index > 0 {
                             builder.push(" OR ");
                         }
                         filter.append_query(builder);
-                    };
+                    }
                     builder.push(" )");
                 }
                 CompositeFilter::And(items) => {
@@ -192,18 +166,16 @@ pub mod query {
 
                     for item in items {
                         match item {
-                            FilterItem::Single(single) => {
-                                match single {
-                                    MessageFilter::Audience(audience) => {
-                                        match audience { AudienceFilter::Uuid(uuid) => {
-                                            audiences.push(*uuid);
-                                        } }
+                            FilterItem::Single(single) => match single {
+                                MessageFilter::Audience(audience) => match audience {
+                                    AudienceFilter::Uuid(uuid) => {
+                                        audiences.push(*uuid);
                                     }
-                                    _ => {
-                                        others.push(item);
-                                    }
+                                },
+                                _ => {
+                                    others.push(item);
                                 }
-                            }
+                            },
                             FilterItem::Composite(_) => {
                                 others.push(item);
                             }
@@ -216,7 +188,7 @@ pub mod query {
                         builder.push("audiences.users_hash = MD5(");
                         builder.push_bind(to_player_seq(&audiences));
                         builder.push(") ");
-                        
+
                         if !others.is_empty() {
                             builder.push("AND ");
                         }
@@ -253,7 +225,7 @@ pub mod query {
             }
         }
     }
-    
+
     impl Queryable<Postgres> for Limit {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
             match self {
@@ -438,7 +410,7 @@ impl Display for MessageFilter {
             }
             MessageFilter::Context(context) => {
                 write!(f, "{}", context)
-            },
+            }
             MessageFilter::Content(content) => {
                 write!(f, "{}", content)
             }
@@ -491,30 +463,30 @@ impl Display for CompositeFilter {
 
                 for item in items {
                     match item {
-                        FilterItem::Single(single_filter) => {
-                            match single_filter {
-                                MessageFilter::Audience(audience) => {
-                                    match audience { AudienceFilter::Uuid(uuid) => {
-                                        audiences.push(*uuid);
-                                    }}
+                        FilterItem::Single(single_filter) => match single_filter {
+                            MessageFilter::Audience(audience) => match audience {
+                                AudienceFilter::Uuid(uuid) => {
+                                    audiences.push(*uuid);
                                 }
-                                _ => {
-                                    others.push(item);
-                                }
+                            },
+                            _ => {
+                                others.push(item);
                             }
-                        }
-                        FilterItem::Composite(_) => {
-                            others.push(item)
-                        }
+                        },
+                        FilterItem::Composite(_) => others.push(item),
                     }
                 }
 
                 let mut joined = others
                     .iter()
-                    .map(|item| item.to_string()).collect::<Vec<_>>();
+                    .map(|item| item.to_string())
+                    .collect::<Vec<_>>();
 
                 if !audiences.is_empty() {
-                    joined.push(format!("audiences.users_hash = MD5('{}')", to_player_seq(&audiences)))
+                    joined.push(format!(
+                        "audiences.users_hash = MD5('{}')",
+                        to_player_seq(&audiences)
+                    ))
                 }
 
                 write!(f, "{}", joined.join(" AND "))
@@ -584,7 +556,10 @@ pub mod from_proto {
     use crate::chatq;
     use crate::chatq::message_filter_pattern;
     use crate::data::error::ModelConversionError;
-    use crate::data::filter::{AudienceFilter, CompositeFilter, ContentFilter, ContextFilter, FilterItem, MessageFilter, MessageFilterPattern, SourceFilter, TimestampFilter};
+    use crate::data::filter::{
+        AudienceFilter, CompositeFilter, ContentFilter, ContextFilter, FilterItem, MessageFilter,
+        MessageFilterPattern, SourceFilter, TimestampFilter,
+    };
     use std::str::FromStr;
     use uuid::Uuid;
 
@@ -625,57 +600,36 @@ pub mod from_proto {
         fn try_from(value: message_filter::ContentFilter) -> Result<Self, Self::Error> {
             use crate::chatq::message_filter_pattern::message_filter::content_filter::Condition;
 
-            match value.condition.ok_or(ModelConversionError::ValueNotProvided("content filter"))? {
-                Condition::Like(left) => {
-                    Ok(Self::Like(left))
-                }
-                Condition::ILike(left) => {
-                    Ok(Self::ILike(left))
-                }
-                Condition::SimilarTo(left) => {
-                    Ok(Self::SimilarTo(left))
-                }
-                Condition::NotSimilarTo(left) => {
-                    Ok(Self::NotSimilarTo(left))
-                }
-                Condition::Regexp(left) => {
-                    Ok(Self::Regexp(left))
-                }
-                Condition::NotRegexp(left) => {
-                    Ok(Self::NotRegexp(left))
-                }
+            match value
+                .condition
+                .ok_or(ModelConversionError::ValueNotProvided("content filter"))?
+            {
+                Condition::Like(left) => Ok(Self::Like(left)),
+                Condition::ILike(left) => Ok(Self::ILike(left)),
+                Condition::SimilarTo(left) => Ok(Self::SimilarTo(left)),
+                Condition::NotSimilarTo(left) => Ok(Self::NotSimilarTo(left)),
+                Condition::Regexp(left) => Ok(Self::Regexp(left)),
+                Condition::NotRegexp(left) => Ok(Self::NotRegexp(left)),
             }
         }
     }
 
     impl From<TimestampFilter> for message_filter::TimestampFilter {
         fn from(value: TimestampFilter) -> Self {
-
             use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
-
 
             message_filter::TimestampFilter {
                 condition: Some(match value {
-                    TimestampFilter::Equals(ts) => {
-                        Condition::Equals(proto_from_naive(ts))
-                    }
+                    TimestampFilter::Equals(ts) => Condition::Equals(proto_from_naive(ts)),
                     TimestampFilter::GreaterThan(ts) => {
-                        Condition::GreaterThan(proto_from_naive(
-                            ts,
-                        ))
+                        Condition::GreaterThan(proto_from_naive(ts))
                     }
-                    TimestampFilter::LessThan(ts) => {
-                        Condition::LessThan(proto_from_naive(ts))
-                    }
+                    TimestampFilter::LessThan(ts) => Condition::LessThan(proto_from_naive(ts)),
                     TimestampFilter::GreaterThanEqual(ts) => {
-                        Condition::GreaterThanEqual(
-                            proto_from_naive(ts),
-                        )
+                        Condition::GreaterThanEqual(proto_from_naive(ts))
                     }
                     TimestampFilter::LessThanEqual(ts) => {
-                        Condition::LessThanEqual(
-                            proto_from_naive(ts),
-                        )
+                        Condition::LessThanEqual(proto_from_naive(ts))
                     }
                 }),
             }
@@ -688,9 +642,7 @@ pub mod from_proto {
         fn try_from(
             value: chatq::message_filter_pattern::message_filter::TimestampFilter,
         ) -> Result<Self, Self::Error> {
-
             use crate::chatq::message_filter_pattern::message_filter::timestamp_filter::Condition;
-
 
             match value
                 .condition
@@ -826,10 +778,10 @@ pub mod from_proto {
                 MessageFilter::Content(content) => message_filter_pattern::MessageFilter {
                     condition: Some(
                         chatq::message_filter_pattern::message_filter::Condition::Content(
-                            content.into()
-                        )
-                    )
-                }
+                            content.into(),
+                        ),
+                    ),
+                },
             }
         }
     }
@@ -867,8 +819,7 @@ pub mod from_proto {
         fn try_from(
             value: chatq::message_filter_pattern::CompositeFilter,
         ) -> Result<Self, Self::Error> {
-            match value.operation()
-            {
+            match value.operation() {
                 Operation::And => Ok(Self::And(
                     value
                         .items
