@@ -27,6 +27,7 @@ thiserror = "1"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["fmt"] }
 ttl_cache = "0.5.1"
+dashmap = "5.5.3"
 
 [build-dependencies]
 tonic-build = "0.11.0"

@@ -26,7 +26,6 @@ pub struct Sessionless {
 pub struct WithSession {
     pub session_id: Uuid,
     pub page_number: i32,
-    pub pattern: MessageQueryPattern,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -59,7 +58,6 @@ pub mod from_proto {
         QueryMessageResponse, Sessionless, WithSession,
     };
     use std::fmt::Display;
-    use tonic::codegen::Body;
 
     impl Display for Limit {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -139,10 +137,6 @@ pub mod from_proto {
                             .ok_or(ModelConversionError::ValueNotProvided("session_id"))?
                             .try_into()?,
                         page_number: with_session.page_number,
-                        pattern: with_session
-                            .pattern
-                            .ok_or(ModelConversionError::ValueNotProvided("pattern"))?
-                            .try_into()?,
                     }),
                 }),
             }
@@ -164,8 +158,7 @@ pub mod from_proto {
                     kind: Some(Kind::WithSession(
                         chatq::message_query_request::WithSession {
                             session_id: Some(with_session.session_id.into()),
-                            page_number: with_session.page_number,
-                            pattern: Some(with_session.pattern.into()),
+                            page_number: with_session.page_number, 
                         },
                     )),
                 },
