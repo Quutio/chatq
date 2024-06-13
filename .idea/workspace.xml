@@ -7,14 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Start implementing pagination">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Continue implementing pagination (WIP)">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/query.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/query.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -173,7 +168,8 @@
       <workItem from="1717987108738" duration="4731000" />
       <workItem from="1717994257184" duration="2881000" />
       <workItem from="1718032381142" duration="3409000" />
-      <workItem from="1718101030366" duration="10907000" />
+      <workItem from="1718101030366" duration="12822000" />
+      <workItem from="1718144671600" duration="1908000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -431,14 +427,21 @@
       <option name="project" value="LOCAL" />
       <updated>1717997123063</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="Continue implementing pagination (WIP)">
+      <option name="closed" value="true" />
+      <created>1718111949057</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1718111949057</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Progress types." />
     <MESSAGE value="Make server impl use common proto-types." />
     <MESSAGE value="Remove unnecessary indirect protos" />
     <MESSAGE value="Improve types crate" />
@@ -463,6 +466,7 @@
     <MESSAGE value="Bump dependency versions and satisfy Clippy" />
     <MESSAGE value="Bump missed dependency versions on gateway" />
     <MESSAGE value="Start implementing pagination" />
-    <option name="LAST_COMMIT_MESSAGE" value="Start implementing pagination" />
+    <MESSAGE value="Continue implementing pagination (WIP)" />
+    <option name="LAST_COMMIT_MESSAGE" value="Continue implementing pagination (WIP)" />
   </component>
 </project>

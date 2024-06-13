@@ -72,27 +72,27 @@ pub mod query {
         }
     }
 
-    impl Queryable<Postgres> for TimestampFilter {
-        fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
-            match self {
-                TimestampFilter::Equals(ts) => {
-                    builder.push("messages.issued = ").push_bind(*ts);
-                }
-                TimestampFilter::GreaterThan(ts) => {
-                    builder.push("messages.issued > ").push_bind(*ts);
-                }
-                TimestampFilter::LessThan(ts) => {
-                    builder.push("messages.issued < ").push_bind(*ts);
-                }
-                TimestampFilter::GreaterThanEqual(ts) => {
-                    builder.push("messages.issued >= ").push_bind(*ts);
-                }
-                TimestampFilter::LessThanEqual(ts) => {
-                    builder.push("messages.issued <= ").push_bind(*ts);
-                }
+impl Queryable<Postgres> for TimestampFilter {
+    fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
+        match self {
+            TimestampFilter::Equals(ts) => {
+                builder.push("messages.issued = ").push_bind(*ts);
+            }
+            TimestampFilter::GreaterThan(ts) => {
+                builder.push("messages.issued > ").push_bind(*ts);
+            }
+            TimestampFilter::LessThan(ts) => {
+                builder.push("messages.issued < ").push_bind(*ts);
+            }
+            TimestampFilter::GreaterThanEqual(ts) => {
+                builder.push("messages.issued >= ").push_bind(*ts);
+            }
+            TimestampFilter::LessThanEqual(ts) => {
+                builder.push("messages.issued <= ").push_bind(*ts);
             }
         }
     }
+}
 
     impl Queryable<Postgres> for AudienceFilter {
         fn append_query(&self, builder: &mut QueryBuilder<'_, Postgres>) {
