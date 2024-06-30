@@ -8,7 +8,11 @@ module.exports = {
     "./dist/**/*.html",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        'custom' : 'Qubician'
+      }
+    },
   },
   plugins: [],
 }

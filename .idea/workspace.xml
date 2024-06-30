@@ -7,10 +7,16 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Bump dependency versions and satisfy Clippy">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Continue implementing pagination (WIP)">
+      <change afterPath="$PROJECT_DIR$/chatq-webui/public/fonts/qubician.woff" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-webui/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-webui/input.css" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/input.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-webui/public/tailwind.css" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/public/tailwind.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-webui/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-webui/tailwind.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/tailwind.config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,7 +54,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/rust-projects/markovtoy&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/multilanguage-projects/chatq/chatq-webui/public&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -63,9 +69,11 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/chatq-webui/public" />
       <recent name="$PROJECT_DIR$/chatq-server" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/chatq-webui/public/fonts" />
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
@@ -162,6 +170,9 @@
       <workItem from="1717253309494" duration="980000" />
       <workItem from="1717254294718" duration="2173000" />
       <workItem from="1717987108738" duration="358000" />
+      <workItem from="1718401302111" duration="15444000" />
+      <workItem from="1718576186050" duration="1603000" />
+      <workItem from="1718773396918" duration="8000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
