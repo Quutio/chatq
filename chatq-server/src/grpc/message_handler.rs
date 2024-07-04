@@ -63,7 +63,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
         let insert = self
             .handler
             .db
-            .insert_message(stub.try_into().map_err(|err| {
+            .insert_message(&stub.clone().try_into().map_err(|err| {
                 Status::invalid_argument(format!("Invalid message stub :: {}", err))
             })?)
             .await

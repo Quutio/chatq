@@ -41,6 +41,7 @@ pub struct MessageQueryRequest {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct QueryMessageResponse {
+    pub session_key: Uuid,
     pub total_count: i32,
     pub current_page: i32,
     pub total_pages: i32,
@@ -171,6 +172,8 @@ pub mod from_proto {
 
         fn try_from(value: chatq::QueryMessageResponse) -> Result<Self, Self::Error> {
             Ok(Self {
+                session_key: value.session_key.ok_or(ModelConversionError::ValueNotProvided("session_key"))?.try_into()
+                    .map_err(|err| ModelConversionError::ValueNotProvided("invalid uuid"))?,
                 total_count: value.total_count,
                 current_page: value.current_page,
                 total_pages: value.total_pages,
@@ -186,6 +189,7 @@ pub mod from_proto {
     impl From<QueryMessageResponse> for chatq::QueryMessageResponse {
         fn from(value: QueryMessageResponse) -> Self {
             Self {
+                session_key: Some(value.session_key.into()),
                 total_count: value.total_count,
                 current_page: value.current_page,
                 total_pages: value.total_pages,

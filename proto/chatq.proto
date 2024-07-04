@@ -96,10 +96,11 @@ message Message {
 }
 
 message QueryMessageResponse {
-  int32 total_count = 1;
-  int32 current_page = 2;
-  int32 total_pages = 3;
-  repeated Message messages = 4;
+  Uuid session_key = 1;
+  int32 total_count = 2;
+  int32 current_page = 3;
+  int32 total_pages = 4;
+  repeated Message messages = 5;
 }
 
 message Messages {

@@ -5,15 +5,16 @@ use anyhow::Context;
 
 use chrono::{NaiveDateTime, Utc};
 use sqlx::postgres::PgRow;
-use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction, QueryBuilder};
+use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction, QueryBuilder, Execute};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 use chatq_types::data::filter::query::Queryable;
-use chatq_types::data::filter::to_player_seq;
+use chatq_types::data::filter::{CompositeFilter, FilterItem, MessageFilter, MessageFilterPattern, TimestampFilter, to_player_seq};
 
 use chatq_types::data::message::{Message, MessageAudience, MessageSource, MessageStub};
 use chatq_types::data::query::{Limit, MessageQueryPattern, MessageQueryRequest, MessageQueryRequestKind, QueryMessageResponse};
 use chatq_types::data::Snapshot;
+use num::integer::div_ceil;
 
 pub mod grpc;
 pub mod message_handler;
@@ -49,68 +50,56 @@ impl<'a> ChatQDao {
         }
     }
 
-    async fn _insert_message<T>(conn: &mut T, stub: MessageStub) -> anyhow::Result<Message>
+    async fn upsert_audience<T>(conn: &mut T, players: &[Uuid]) -> anyhow::Result<i64>
     where
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
-        let audience = &stub.audience;
-
-        let players = audience.players();
-        let padded = to_player_seq(audience.players());
-
+        let padded = to_player_seq(&players);
         let audience_id = sqlx::query!(
             r#"
 INSERT INTO audiences (users,users_hash)
 VALUES ($1,MD5($2)) ON CONFLICT (users) DO UPDATE SET users = EXCLUDED.users
 RETURNING id
             "#,
-            players,
+            &players,
             padded
         )
-        .fetch_one(&mut *conn)
-        .await?
-        .id;
+            .fetch_one(&mut *conn)
+            .await?
+            .id;
 
+        Ok(audience_id)
+    }
+
+    async fn upsert_source<T>(conn: &mut T, player: &Uuid) -> anyhow::Result<i64>
+        where
+                for<'e> &'e mut T: Executor<'e, Database = Postgres>,
+    {
         let source_id = sqlx::query!(
             r#"
 INSERT INTO sources (uuid)
 VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid
 RETURNING id
             "#,
-            stub.source.player()
+            player
         )
-        .fetch_one(&mut *conn)
-        .await?
-        .id;
-
-        let source = &stub.audience;
-        for player in source.players() {
-            let source_id = sqlx::query!(
-                r#"
-INSERT INTO sources (uuid)
-VALUES ($1) ON CONFLICT (uuid) DO UPDATE SET uuid = EXCLUDED.uuid
-RETURNING id
-                "#,
-                player
-            )
             .fetch_one(&mut *conn)
             .await?
             .id;
-            sqlx::query!(
-                r#"
-INSERT INTO source_audiences (source_id,audience_id)
-VALUES ($1,$2) ON CONFLICT DO NOTHING"#,
-                source_id,
-                audience_id
-            )
-            .execute(&mut *conn)
-            .await?;
-        }
+
+        Ok(source_id)
+    }
+
+    async fn insert_message(&self, stub: &MessageStub) -> anyhow::Result<Message> {
+        let mut txn = self.pool.begin().await?;
+
+        let audience_id = Self::upsert_audience(&mut *txn, stub.audience.players()).await?;
+        let source_id = Self::upsert_source(&mut *txn, stub.source.player()).await?;
 
         let message_id = sqlx::query!(
             r#"
-INSERT INTO messages (issued,content,audience_id,source_id,context)
-VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING
+INSERT INTO messages (issued, content, audience_id, source_id, context)
+VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING
 RETURNING id
             "#,
             stub.timestamp,
@@ -119,26 +108,20 @@ RETURNING id
             source_id,
             stub.context
         )
-        .fetch_one(&mut *conn)
-        .await?
-        .id;
+            .fetch_one(&mut *txn)
+            .await?
+            .id;
+
+        txn.commit().await?;
 
         Ok(Message {
             id: message_id,
             timestamp: stub.timestamp,
-            source: stub.source,
-            audience: stub.audience,
-            content: stub.content,
-            context: stub.context,
+            source: stub.source.clone(),
+            audience: stub.audience.clone(),
+            content: stub.content.clone(),
+            context: stub.context.clone(),
         })
-    }
-
-    pub async fn insert_message(&self, stub: MessageStub) -> anyhow::Result<Message> {
-        let mut txn = self.pool.begin().await?;
-
-        let res = Self::_insert_message(&mut *txn, stub).await;
-        txn.commit().await?;
-        res
     }
 
     pub async fn _generate_snapshot<T>(
@@ -246,7 +229,7 @@ RETURNING id, snapshot_taken
         txn.commit().await?;
         res
     }
-
+    
     pub async fn _query_messages<T>(
         conn: &mut T,
         query: &MessageQueryPattern,
@@ -288,13 +271,14 @@ RETURNING id, snapshot_taken
         let mut sources = HashMap::new();
 
         for message in &all_messages {
+            
             let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, message.3 as i32)
                 .fetch_one(&mut *conn)
                 .await?;
 
             audiences.insert(message.0, (bar.users, message.3));
         }
-
+        
         for message in &all_messages {
             let bar = sqlx::query!(
                 r#"
@@ -352,11 +336,9 @@ RETURNING id, snapshot_taken
     {
         let mut audiences = HashMap::new();
         let mut sources = HashMap::new();
-
-        let res: Vec<Message> = Vec::new();
-
+        
         for message in all_messages {
-            let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, message.id as i32)
+            let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, message.audience_id as i32)
                 .fetch_one(&mut *conn)
                 .await?;
 
@@ -419,14 +401,7 @@ RETURNING id, snapshot_taken
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
 
-        let count_base_sql = r#"
-        SELECT COUNT(messages.id)
-            FROM messages
-            LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
-            LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
-            LEFT JOIN sources ON sources.id = messages.source_id
-            LEFT JOIN audiences ON audiences.id = source_audiences.audience_id
-        "#;
+        let count_base_sql = r#"SELECT COUNT(*) as count FROM ("#;
 
         let base_sql = r#"
         SELECT messages.*
@@ -446,18 +421,36 @@ RETURNING id, snapshot_taken
 
                 let mut builder = QueryBuilder::new(base_sql);
 
+                let mut query = sessionless.pattern.clone();
+                let page_number = 1;
+                let page_size = sessionless.page_size;
+
+                match &mut query.limit {
+                    Limit::All => {
+                        query.limit = Limit::Amount(page_size)
+                    }
+                    Limit::Amount(amount) => {
+                        query.limit = Limit::Amount(min(page_size, *amount))
+                    }
+                }
+
                 builder.push(" WHERE ");
-                count_builder.push(" WHERE ");
                 query.filter.append_query(&mut builder);
-                query.filter.append_query(&mut count_builder);
                 builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
+                
+                count_builder.push(base_sql);
+                count_builder.push(" WHERE ");
+                query.filter.append_query(&mut count_builder);
                 count_builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
+                count_builder.push(")");
+                
                 query.limit.append_query(&mut builder);
 
                 println!("{}", builder.sql());
+                println!("{}", count_builder.sql());
 
                 let count_messages = count_builder.build()
-                    .map(|row| {
+                    .map(|row: PgRow| {
                         let count: i64 = row.get("count");
                         count
                     })
@@ -484,34 +477,38 @@ RETURNING id, snapshot_taken
                     })
                     .fetch_all(&mut *conn)
                     .await?;
-
+                
                 let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
 
-                let resp = QueryMessageResponse {
-                    total_count: count_messages as i32,
-                    current_page: 1,
-                    total_pages: (count_messages) as i32 / sessionless.page_size,
-                    messages: res,
+                let mut write = self.session_cache.write().await;
+                let session = SessionData {
+                    session_id: Uuid::new_v4(),
+                    issued: Utc::now().naive_local(),
+                    page_size: sessionless.page_size,
+                    page_number: 1,
+                    pattern: sessionless.pattern,
                 };
                 
-                    let mut write = self.session_cache.write().await;
-                    let session = SessionData {
-                        session_id: Uuid::new_v4(),
-                        issued: Utc::now().naive_local(),
-                        page_size: sessionless.page_size,
-                        page_number: 1,
-                        pattern: sessionless.pattern,
-                    };
+                write.insert(session.session_id, session.clone());
 
-                    write.insert(session.session_id, session);
-
+                let resp = QueryMessageResponse {
+                    session_key: session.session_id,
+                    total_count: count_messages as i32,
+                    current_page: 1,
+                    total_pages: div_ceil(count_messages as i32, sessionless.page_size),
+                    messages: res,
+                };
                 Ok(resp)
             }
             MessageQueryRequestKind::WithSession(with_session) => {
-                
-                let mut write = self.session_cache.write().await;
-                let session = write.get(&with_session.session_id).context("session not present")?;
 
+                let session: SessionData;
+
+                {
+                    let write = self.session_cache.write().await;
+                    session = write.get(&with_session.session_id).context("session not present")?.clone();
+                }
+                
                 let mut query = session.pattern.clone();
                 let page_number = with_session.page_number;
                 let page_size = session.page_size;
@@ -530,16 +527,50 @@ RETURNING id, snapshot_taken
                         query.limit = Limit::Amount(min(page_size, *amount))
                     }
                 }
+                
+                let mut new_filter: MessageFilterPattern;
+                
+                let timestamp_filter = MessageFilter::InsertTimestamp(
+                    TimestampFilter::LessThanEqual(session.issued)
+                );
+                
+                match query.filter {
+                    MessageFilterPattern::Single(filter) => {
+                        new_filter = MessageFilterPattern::Composite(
+                            CompositeFilter::And(vec![
+                                FilterItem::Single(filter),
+                                FilterItem::Single(timestamp_filter)
+                            ])
+                        )
+                    }
+                    MessageFilterPattern::Composite(filter) => {
+                        new_filter = MessageFilterPattern::Composite(
+                            CompositeFilter::And(
+                                vec![
+                                    FilterItem::Single(timestamp_filter),
+                                    FilterItem::Composite(filter)
+                                ]
+                            )
+                        )
+                    }
+                }
+                
+                query.filter = new_filter;
 
                 builder.push(" WHERE ");
-                count_builder.push(" WHERE ");
                 query.filter.append_query(&mut builder);
-                query.filter.append_query(&mut count_builder);
                 builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
+
+                count_builder.push(base_sql);
+                count_builder.push(" WHERE ");
+                query.filter.append_query(&mut count_builder);
                 count_builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
+                count_builder.push(")");
+
                 query.limit.append_query(&mut builder);
                 builder.push(" OFFSET ");
                 builder.push_bind(offset);
+
 
                 println!("{}", builder.sql());
 
@@ -575,9 +606,10 @@ RETURNING id, snapshot_taken
                 let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
                 
                 let resp = QueryMessageResponse {
+                    session_key: session.session_id,
                     total_count: count_messages as i32,
                     current_page: page_number,
-                    total_pages: count_messages as i32 / page_size,
+                    total_pages: div_ceil(count_messages as i32, page_size),
                     messages: res,
                 };
                 
@@ -588,7 +620,7 @@ RETURNING id, snapshot_taken
                         issued: session.issued,
                         page_size,
                         page_number,
-                        pattern: session.pattern,
+                        pattern: session.pattern.clone(),
                     };
 
                     write.insert(session.session_id, session);
