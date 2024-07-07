@@ -96,7 +96,11 @@ message Message {
 }
 
 message QueryMessageResponse {
-  repeated Message messages = 1;
+  Uuid session_key = 1;
+  int32 total_count = 2;
+  int32 current_page = 3;
+  int32 total_pages = 4;
+  repeated Message messages = 5;
 }
 
 message Messages {
@@ -196,7 +200,19 @@ message MessageListenRequest {
 }
 
 message MessageQueryRequest {
-  MessageQueryPattern pattern = 1;
+  message Sessionless {
+    int32 page_size = 1;
+    MessageQueryPattern pattern = 2;
+  }
+  message WithSession {
+    Uuid session_id = 1;
+    int32 page_number = 2;
+  }
+
+  oneof kind {
+    Sessionless sessionless = 1;
+    WithSession with_session = 2;
+  }
 }
 
 message MessageQueryPattern {

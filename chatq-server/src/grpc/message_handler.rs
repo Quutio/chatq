@@ -1,10 +1,10 @@
 use crate::message_handler::MessageHandler;
 use anyhow::Context;
 use chatq_types::chatq::{
-    FetchSnapshotResponse, GenerateSnapshotResponse, MessageQueryRequest, SnapshotFetchRequest,
+    FetchSnapshotResponse, GenerateSnapshotResponse, SnapshotFetchRequest,
     SnapshotGenerateRequest,
 };
-use chatq_types::data::query::MessageQueryPattern;
+use chatq_types::data::query::{MessageQueryPattern, MessageQueryRequest};
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -63,7 +63,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
         let insert = self
             .handler
             .db
-            .insert_message(stub.try_into().map_err(|err| {
+            .insert_message(&stub.clone().try_into().map_err(|err| {
                 Status::invalid_argument(format!("Invalid message stub :: {}", err))
             })?)
             .await
@@ -141,29 +141,22 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
 
     async fn query_messages(
         &self,
-        request: Request<MessageQueryRequest>,
+        request: tonic::Request<chatq_types::chatq::MessageQueryRequest>,
     ) -> Result<Response<QueryMessageResponse>, Status> {
         let req = request.into_inner();
-        let query = req
-            .pattern
-            .ok_or(Status::invalid_argument("pattern not present"))?;
 
-        let query: MessageQueryPattern = query
+        let query: MessageQueryRequest = req
             .try_into()
-            .map_err(|err| Status::invalid_argument(format!("invalid filter :: {}", err)))?;
+            .map_err(|err| Status::invalid_argument(format!("invalid request :: {}", err)))?;
 
-        let res = self
+        let resp = self
             .handler
             .db
-            .query_messages(&query)
+            .query_messages_raw(query)
             .await
             .map_err(|err| Status::internal(format!("database failure {}", err)))?;
 
-        let resp = QueryMessageResponse {
-            messages: res.into_iter().map(|op| op.into()).collect(),
-        };
-
-        Ok(Response::new(resp))
+        Ok(Response::new(resp.into()))
     }
 
     async fn generate_snapshot(

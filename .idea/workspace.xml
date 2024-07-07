@@ -7,16 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Continue implementing pagination (WIP)">
-      <change afterPath="$PROJECT_DIR$/chatq-webui/public/fonts/qubician.woff" afterDir="false" />
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Implement a query pagination system.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-webui/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-webui/input.css" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/input.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-webui/public/tailwind.css" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/public/tailwind.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-webui/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-webui/tailwind.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/tailwind.config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,6 +24,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="dev" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MacroExpansionManager">
@@ -53,8 +51,8 @@
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/multilanguage-projects/chatq/chatq-webui/public&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/query-pagination&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/rust-projects/markovtoy&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -69,11 +67,9 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/chatq-webui/public" />
       <recent name="$PROJECT_DIR$/chatq-server" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/chatq-webui/public/fonts" />
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
@@ -169,10 +165,14 @@
       <workItem from="1717236526640" duration="4604000" />
       <workItem from="1717253309494" duration="980000" />
       <workItem from="1717254294718" duration="2173000" />
-      <workItem from="1717987108738" duration="358000" />
-      <workItem from="1718401302111" duration="15444000" />
-      <workItem from="1718576186050" duration="1603000" />
-      <workItem from="1718773396918" duration="8000" />
+      <workItem from="1717987108738" duration="4731000" />
+      <workItem from="1717994257184" duration="2881000" />
+      <workItem from="1718032381142" duration="3409000" />
+      <workItem from="1718101030366" duration="12822000" />
+      <workItem from="1718144671600" duration="1908000" />
+      <workItem from="1720047653866" duration="6276000" />
+      <workItem from="1720053937054" duration="7955000" />
+      <workItem from="1720377395796" duration="469000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -414,17 +414,56 @@
       <option name="project" value="LOCAL" />
       <updated>1717255510297</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="Bump missed dependency versions on gateway">
+      <option name="closed" value="true" />
+      <created>1717987491430</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1717987491430</updated>
+    </task>
+    <task id="LOCAL-00032" summary="Start implementing pagination">
+      <option name="closed" value="true" />
+      <created>1717997123063</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1717997123063</updated>
+    </task>
+    <task id="LOCAL-00033" summary="Continue implementing pagination (WIP)">
+      <option name="closed" value="true" />
+      <created>1718111949057</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1718111949057</updated>
+    </task>
+    <task id="LOCAL-00034" summary="Implement a query pagination system.">
+      <option name="closed" value="true" />
+      <created>1720060933648</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1720060933648</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Rename things" />
-    <MESSAGE value="Restructure parts" />
-    <MESSAGE value="Progress types." />
-    <MESSAGE value="Make server impl use common proto-types." />
     <MESSAGE value="Remove unnecessary indirect protos" />
     <MESSAGE value="Improve types crate" />
     <MESSAGE value="Progress gateway" />
@@ -446,6 +485,10 @@
     <MESSAGE value="Improve SQL queries" />
     <MESSAGE value="Modify .gitignore" />
     <MESSAGE value="Bump dependency versions and satisfy Clippy" />
-    <option name="LAST_COMMIT_MESSAGE" value="Bump dependency versions and satisfy Clippy" />
+    <MESSAGE value="Bump missed dependency versions on gateway" />
+    <MESSAGE value="Start implementing pagination" />
+    <MESSAGE value="Continue implementing pagination (WIP)" />
+    <MESSAGE value="Implement a query pagination system." />
+    <option name="LAST_COMMIT_MESSAGE" value="Implement a query pagination system." />
   </component>
 </project>
