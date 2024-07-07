@@ -7,14 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Progress webui further.">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Implement a query pagination system.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/grpc/message_handler.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/query.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/query.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -176,7 +171,8 @@
       <workItem from="1718101030366" duration="12822000" />
       <workItem from="1718144671600" duration="1908000" />
       <workItem from="1720047653866" duration="6276000" />
-      <workItem from="1720053937054" duration="6841000" />
+      <workItem from="1720053937054" duration="7955000" />
+      <workItem from="1720377395796" duration="469000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -442,7 +438,15 @@
       <option name="project" value="LOCAL" />
       <updated>1718111949057</updated>
     </task>
-    <option name="localTasksCounter" value="34" />
+    <task id="LOCAL-00034" summary="Implement a query pagination system.">
+      <option name="closed" value="true" />
+      <created>1720060933648</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1720060933648</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -460,7 +464,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Make server impl use common proto-types." />
     <MESSAGE value="Remove unnecessary indirect protos" />
     <MESSAGE value="Improve types crate" />
     <MESSAGE value="Progress gateway" />
@@ -485,6 +488,7 @@
     <MESSAGE value="Bump missed dependency versions on gateway" />
     <MESSAGE value="Start implementing pagination" />
     <MESSAGE value="Continue implementing pagination (WIP)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Continue implementing pagination (WIP)" />
+    <MESSAGE value="Implement a query pagination system." />
+    <option name="LAST_COMMIT_MESSAGE" value="Implement a query pagination system." />
   </component>
 </project>

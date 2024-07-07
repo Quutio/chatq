@@ -124,7 +124,7 @@ RETURNING id
         })
     }
 
-    pub async fn _generate_snapshot<T>(
+    async fn _generate_snapshot<T>(
         conn: &mut T,
         target: Uuid,
         query: &MessageQueryPattern,
@@ -186,7 +186,7 @@ RETURNING id, snapshot_taken
         res
     }
 
-    pub async fn _fetch_snapshot<T>(conn: &mut T, id: Uuid) -> anyhow::Result<Option<Snapshot>>
+    async fn _fetch_snapshot<T>(conn: &mut T, id: Uuid) -> anyhow::Result<Option<Snapshot>>
     where
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
@@ -325,9 +325,8 @@ RETURNING id, snapshot_taken
 
         Ok(res)
     }
-
-
-    pub async fn _message_details_query<T>(
+    
+    async fn _message_details_query<T>(
         conn: &mut T,
         all_messages: &[MessageDetails]
     ) -> anyhow::Result<Vec<Message>>
@@ -336,7 +335,7 @@ RETURNING id, snapshot_taken
     {
         let mut audiences = HashMap::new();
         let mut sources = HashMap::new();
-        
+
         for message in all_messages {
             let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, message.audience_id as i32)
                 .fetch_one(&mut *conn)
