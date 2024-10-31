@@ -96,6 +96,16 @@ RETURNING id
         let audience_id = Self::upsert_audience(&mut *txn, stub.audience.players()).await?;
         let source_id = Self::upsert_source(&mut *txn, stub.source.player()).await?;
 
+        sqlx::query!(
+                r#"
+INSERT INTO source_audiences (source_id,audience_id)
+VALUES ($1,$2) ON CONFLICT DO NOTHING"#,
+                source_id,
+                audience_id
+            )
+            .execute(&mut *txn)
+            .await?;
+
         let message_id = sqlx::query!(
             r#"
 INSERT INTO messages (issued, content, audience_id, source_id, context)
@@ -441,9 +451,12 @@ RETURNING id, snapshot_taken
                 count_builder.push(" WHERE ");
                 query.filter.append_query(&mut count_builder);
                 count_builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
-                count_builder.push(")");
+                count_builder.push(") as derivedQuery");
                 
                 query.limit.append_query(&mut builder);
+
+                println!("{:#?}", query);
+                println!("{}", builder.sql());
 
                 println!("{}", builder.sql());
                 println!("{}", count_builder.sql());
@@ -455,6 +468,7 @@ RETURNING id, snapshot_taken
                     })
                     .fetch_one(&mut *conn)
                     .await?;
+
 
                 let all_messages = builder.build()
                     .map(|row: PgRow| {
@@ -476,7 +490,12 @@ RETURNING id, snapshot_taken
                     })
                     .fetch_all(&mut *conn)
                     .await?;
-                
+
+                println!("aaa");
+                println!("{:#?}", query.filter);
+
+
+
                 let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
 
                 let mut write = self.session_cache.write().await;
@@ -532,6 +551,9 @@ RETURNING id, snapshot_taken
                 let timestamp_filter = MessageFilter::InsertTimestamp(
                     TimestampFilter::LessThanEqual(session.issued)
                 );
+
+                println!("aaa");
+                println!("{:#?}", query.filter);
                 
                 match query.filter {
                     MessageFilterPattern::Single(filter) => {
@@ -554,7 +576,7 @@ RETURNING id, snapshot_taken
                     }
                 }
                 
-                query.filter = new_filter;
+                query.filter = new_filter.clone();
 
                 builder.push(" WHERE ");
                 query.filter.append_query(&mut builder);
@@ -564,13 +586,15 @@ RETURNING id, snapshot_taken
                 count_builder.push(" WHERE ");
                 query.filter.append_query(&mut count_builder);
                 count_builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
-                count_builder.push(")");
+                count_builder.push(") as derivedQuery");
 
                 query.limit.append_query(&mut builder);
                 builder.push(" OFFSET ");
                 builder.push_bind(offset);
 
 
+
+                println!("{:?}", new_filter);
                 println!("{}", builder.sql());
 
                 let count_messages = count_builder.build()

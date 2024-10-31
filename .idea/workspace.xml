@@ -9,6 +9,7 @@
   <component name="ChangeListManager">
     <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Implement a query pagination system.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -51,8 +52,8 @@
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feature/query-pagination&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/rust-projects/markovtoy&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/multilanguage-projects/reportas-prime&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -72,9 +73,6 @@
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
-  </component>
-  <component name="RsExternalLinterProjectSettings">
-    <option name="runOnTheFly" value="true" />
   </component>
   <component name="RunManager" selected="Cargo.Test chatq">
     <configuration name="Run chatq-server" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
@@ -173,6 +171,13 @@
       <workItem from="1720047653866" duration="6276000" />
       <workItem from="1720053937054" duration="7955000" />
       <workItem from="1720377395796" duration="469000" />
+      <workItem from="1720400366433" duration="5468000" />
+      <workItem from="1720900402645" duration="1172000" />
+      <workItem from="1724054484968" duration="5236000" />
+      <workItem from="1725910684757" duration="953000" />
+      <workItem from="1726338186310" duration="6353000" />
+      <workItem from="1729457567158" duration="3360000" />
+      <workItem from="1730389061399" duration="5206000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
