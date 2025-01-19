@@ -100,6 +100,30 @@ impl Queryable<Postgres> for TimestampFilter {
                 AudienceFilter::Uuid(uuid) => {
                     builder.push("audience_sources.uuid = ").push_bind(*uuid);
                 }
+                AudienceFilter::Subset(uuids) => {
+                    let mut players = uuids.to_owned();
+                    players.sort();
+
+                    let seq = players
+                        .into_iter()
+                        .map(|op| format!("uuid(\'{}\')", op.to_string()))
+                        .collect::<Vec<_>>()
+                        .join(",");
+
+                    builder.push("audiences.users @> ARRAY[").push(seq).push("]");
+                }
+                AudienceFilter::Superset(uuids) => {
+                    let mut players = uuids.to_owned();
+                    players.sort();
+
+                    let seq = players
+                        .into_iter()
+                        .map(|op| format!("uuid(\'{}\')", op.to_string()))
+                        .collect::<Vec<_>>()
+                        .join(",");
+
+                    builder.push("audiences.users <@ ARRAY[").push(seq).push("]");
+                }
             }
         }
     }
@@ -170,6 +194,9 @@ impl Queryable<Postgres> for TimestampFilter {
                                 MessageFilter::Audience(audience) => match audience {
                                     AudienceFilter::Uuid(uuid) => {
                                         audiences.push(*uuid);
+                                    },
+                                    _ => {
+                                        others.push(item);
                                     }
                                 },
                                 _ => {
@@ -309,6 +336,8 @@ pub fn to_player_seq(uuids: &[Uuid]) -> String {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum AudienceFilter {
     Uuid(uuid::Uuid),
+    Subset(Vec<Uuid>),
+    Superset(Vec<Uuid>)
 }
 
 impl Display for AudienceFilter {
@@ -316,6 +345,30 @@ impl Display for AudienceFilter {
         match self {
             AudienceFilter::Uuid(uuid) => {
                 write!(f, "audience_sources.uuid = \'{}\'", uuid)
+            }
+            AudienceFilter::Subset(uuids) => {
+                let mut players = uuids.to_owned();
+                players.sort();
+
+                let seq = players
+                    .into_iter()
+                    .map(|op| op.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",");
+
+                write!(f, "audiences.users <@ ARRAY[{}]", seq)
+            }
+            AudienceFilter::Superset(uuids) => {
+                let mut players = uuids.to_owned();
+                players.sort();
+
+                let seq = players
+                    .into_iter()
+                    .map(|op| op.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",");
+
+                write!(f, "audiences.users @> ARRAY[{}]", seq)
             }
         }
     }
@@ -355,6 +408,12 @@ impl EvaluableFilter for AudienceFilter {
     fn evaluate(&self, message: &Message) -> bool {
         match self {
             AudienceFilter::Uuid(uuid) => message.audience.players().contains(uuid),
+            AudienceFilter::Subset(uuids) => {
+                uuids.iter().all(|item| message.audience.players().contains(item))
+            }
+            AudienceFilter::Superset(uuids) => {
+                message.audience.players().iter().all(|item| uuids.contains(item))
+            }
         }
     }
 }
@@ -468,6 +527,7 @@ impl Display for CompositeFilter {
                                 AudienceFilter::Uuid(uuid) => {
                                     audiences.push(*uuid);
                                 }
+                                _ => {}
                             },
                             _ => {
                                 others.push(item);
@@ -565,6 +625,7 @@ pub mod from_proto {
 
     use crate::chatq::message_filter_pattern::composite_filter::filter_item::Type;
     use crate::chatq::message_filter_pattern::{message_filter, Operation, PrimaryCondition};
+    use crate::chatq::message_filter_pattern::message_filter::audience_filter::Condition;
     use crate::data::from_proto::{naive_from_proto, proto_from_naive};
 
     impl From<ContentFilter> for message_filter::ContentFilter {
@@ -661,12 +722,31 @@ pub mod from_proto {
 
     impl From<AudienceFilter> for chatq::message_filter_pattern::message_filter::AudienceFilter {
         fn from(value: AudienceFilter) -> Self {
-            Self {
-                player: Some(match value {
-                    AudienceFilter::Uuid(uuid) => chatq::Uuid {
-                        value: uuid.to_string(),
-                    },
-                }),
+
+            match value {
+                AudienceFilter::Uuid(uuid) => {
+                    Self {
+                        condition: Some(Condition::Single(uuid.into()))
+                    }
+                }
+                AudienceFilter::Subset(uuids) => {
+                    Self {
+                        condition: Some(Condition::Subset(
+                            chatq::Uuids {
+                                uuids: uuids.iter().map(|op| chatq::Uuid { value: op.to_string()}).collect::<Vec<_>>()
+                            }
+                        ))
+                    }
+                }
+                AudienceFilter::Superset(uuids) => {
+                    Self {
+                        condition: Some(Condition::Superset(
+                            chatq::Uuids {
+                                uuids: uuids.iter().map(|op| chatq::Uuid { value: op.to_string()}).collect::<Vec<_>>()
+                            }
+                        ))
+                    }
+                }
             }
         }
     }
@@ -675,11 +755,28 @@ pub mod from_proto {
         type Error = ModelConversionError;
 
         fn try_from(value: message_filter::AudienceFilter) -> Result<Self, Self::Error> {
-            let player = value
-                .player
-                .map(|op| Uuid::from_str(&op.value).map_err(ModelConversionError::UuidConversion))
-                .ok_or(ModelConversionError::ValueNotProvided("player"))??;
-            Ok(AudienceFilter::Uuid(player))
+
+            match value.condition.ok_or(ModelConversionError::ValueNotProvided("condition"))? {
+                Condition::Single(uuid) => {
+                    let player = Uuid::from_str(&uuid.value).map_err(ModelConversionError::UuidConversion)?;
+                    Ok(AudienceFilter::Uuid(player))
+                }
+                Condition::Subset(uuids) => {
+                    let uuids = uuids.uuids
+                        .iter()
+                        .map(|op| Uuid::from_str(&op.value).map_err(ModelConversionError::UuidConversion))
+                        .collect::<Result<_, _>>()?;
+
+                    Ok(AudienceFilter::Subset(uuids))
+                }
+                Condition::Superset(uuids) => {
+                    let uuids = uuids.uuids
+                        .iter()
+                        .map(|op| Uuid::from_str(&op.value).map_err(ModelConversionError::UuidConversion))
+                        .collect::<Result<_, _>>()?;
+                    Ok(AudienceFilter::Superset(uuids))
+                }
+            }
         }
     }
 

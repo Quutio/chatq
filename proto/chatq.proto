@@ -157,7 +157,11 @@ message MessageFilterPattern {
     }
 
     message AudienceFilter {
-      Uuid player = 1;
+      oneof condition {
+        Uuid single = 1;
+        Uuids subset = 2;
+        Uuids superset = 3;
+      }
     }
 
     message SourceFilter {
