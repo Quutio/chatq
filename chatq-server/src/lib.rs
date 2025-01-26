@@ -5,7 +5,7 @@ use anyhow::Context;
 
 use chrono::{NaiveDateTime, Utc};
 use sqlx::postgres::PgRow;
-use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction, QueryBuilder, Execute};
+use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction, QueryBuilder};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 use chatq_types::data::filter::query::Queryable;
@@ -24,6 +24,7 @@ pub struct SessionData {
     session_id: Uuid,
     issued: NaiveDateTime,
     page_size: i32,
+    #[allow(dead_code)]
     page_number: i32,
     pattern: MessageQueryPattern,
 }
@@ -261,7 +262,7 @@ RETURNING id, snapshot_taken
         builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
         query.limit.append_query(&mut builder);
 
-        println!("{}", builder.sql());
+        dbg!("{}", builder.sql());
 
         let all_messages = builder.build()
             .map(|row: PgRow| {
@@ -424,14 +425,11 @@ RETURNING id, snapshot_taken
         match query.kind {
             MessageQueryRequestKind::Sessionless(sessionless) => {
 
-                let query = sessionless.pattern.clone();
-
                 let mut count_builder = QueryBuilder::new(count_base_sql);
 
                 let mut builder = QueryBuilder::new(base_sql);
 
                 let mut query = sessionless.pattern.clone();
-                let page_number = 1;
                 let page_size = sessionless.page_size;
 
                 match &mut query.limit {
@@ -455,11 +453,11 @@ RETURNING id, snapshot_taken
                 
                 query.limit.append_query(&mut builder);
 
-                println!("{:#?}", query);
-                println!("{}", builder.sql());
+                dbg!("{:#?}", &query);
+                dbg!("{}", &builder.sql());
 
-                println!("{}", builder.sql());
-                println!("{}", count_builder.sql());
+                dbg!("{}", &builder.sql());
+                dbg!("{}", &count_builder.sql());
 
                 let count_messages = count_builder.build()
                     .map(|row: PgRow| {
@@ -491,8 +489,7 @@ RETURNING id, snapshot_taken
                     .fetch_all(&mut *conn)
                     .await?;
 
-                println!("aaa");
-                println!("{:#?}", query.filter);
+                dbg!("{:#?}", &query.filter);
 
 
 
@@ -537,23 +534,22 @@ RETURNING id, snapshot_taken
 
                 let mut builder = QueryBuilder::new(base_sql);
 
-                match &mut query.limit {
+                match query.limit {
                     Limit::All => {
                         query.limit = Limit::Amount(page_size)
                     }
                     Limit::Amount(amount) => {
-                        query.limit = Limit::Amount(min(page_size, *amount))
+                        query.limit = Limit::Amount(min(page_size, amount))
                     }
                 }
                 
-                let mut new_filter: MessageFilterPattern;
+                let new_filter: MessageFilterPattern;
                 
                 let timestamp_filter = MessageFilter::InsertTimestamp(
                     TimestampFilter::LessThanEqual(session.issued)
                 );
 
-                println!("aaa");
-                println!("{:#?}", query.filter);
+                dbg!("{:#?}", &query.filter);
                 
                 match query.filter {
                     MessageFilterPattern::Single(filter) => {
@@ -594,8 +590,8 @@ RETURNING id, snapshot_taken
 
 
 
-                println!("{:?}", new_filter);
-                println!("{}", builder.sql());
+                dbg!("{:?}", &new_filter);
+                dbg!("{}", &builder.sql());
 
                 let count_messages = count_builder.build()
                     .map(|row| {

@@ -72,9 +72,7 @@ async fn fetch_snapshot(
         .into_inner()
         .snapshot
         .ok_or((StatusCode::NOT_FOUND, "not found".to_string()))?;
-
-    println!("aa");
-
+    
     let snapshot: Snapshot = result.try_into().map_err(|err| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -82,7 +80,6 @@ async fn fetch_snapshot(
         )
     })?;
 
-    println!("bbb");
     Ok(Json(snapshot))
 }
 

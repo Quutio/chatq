@@ -105,11 +105,11 @@ pub mod from_proto {
             Ok(Self {
                 limit: value
                     .limit
-                    .ok_or(ModelConversionError::ValueNotProvided("limit"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("limit".into()))?
                     .try_into()?,
                 filter: value
                     .filter
-                    .ok_or(ModelConversionError::ValueNotProvided("limit"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("limit".into()))?
                     .try_into()?,
             })
         }
@@ -120,14 +120,14 @@ pub mod from_proto {
         fn try_from(value: chatq::MessageQueryRequest) -> Result<Self, Self::Error> {
             match value
                 .kind
-                .ok_or(ModelConversionError::ValueNotProvided("kind"))?
+                .ok_or(ModelConversionError::ValueNotProvided("kind".into()))?
             {
                 Kind::Sessionless(sessionless) => Ok(Self {
                     kind: MessageQueryRequestKind::Sessionless(Sessionless {
                         page_size: sessionless.page_size,
                         pattern: sessionless
                             .pattern
-                            .ok_or(ModelConversionError::ValueNotProvided("pattern"))?
+                            .ok_or(ModelConversionError::ValueNotProvided("pattern".into()))?
                             .try_into()?,
                     }),
                 }),
@@ -135,7 +135,7 @@ pub mod from_proto {
                     kind: MessageQueryRequestKind::WithSession(WithSession {
                         session_id: with_session
                             .session_id
-                            .ok_or(ModelConversionError::ValueNotProvided("session_id"))?
+                            .ok_or(ModelConversionError::ValueNotProvided("session_id".into()))?
                             .try_into()?,
                         page_number: with_session.page_number,
                     }),
@@ -172,8 +172,8 @@ pub mod from_proto {
 
         fn try_from(value: chatq::QueryMessageResponse) -> Result<Self, Self::Error> {
             Ok(Self {
-                session_key: value.session_key.ok_or(ModelConversionError::ValueNotProvided("session_key"))?.try_into()
-                    .map_err(|err| ModelConversionError::ValueNotProvided("invalid uuid"))?,
+                session_key: value.session_key.ok_or(ModelConversionError::ValueNotProvided("session_key".into()))?.try_into()
+                    .map_err(|err| ModelConversionError::ValueNotProvided(format!("invalid uuid, {:?}", &err).into()))?,
                 total_count: value.total_count,
                 current_page: value.current_page,
                 total_pages: value.total_pages,

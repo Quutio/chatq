@@ -663,7 +663,7 @@ pub mod from_proto {
 
             match value
                 .condition
-                .ok_or(ModelConversionError::ValueNotProvided("content filter"))?
+                .ok_or(ModelConversionError::ValueNotProvided("content filter".into()))?
             {
                 Condition::Like(left) => Ok(Self::Like(left)),
                 Condition::ILike(left) => Ok(Self::ILike(left)),
@@ -707,7 +707,7 @@ pub mod from_proto {
 
             match value
                 .condition
-                .ok_or(ModelConversionError::ValueNotProvided("condition"))?
+                .ok_or(ModelConversionError::ValueNotProvided("condition".into()))?
             {
                 Condition::Equals(ts) => Ok(Self::Equals(naive_from_proto(ts)?)),
                 Condition::GreaterThan(ts) => Ok(Self::GreaterThan(naive_from_proto(ts)?)),
@@ -756,7 +756,7 @@ pub mod from_proto {
 
         fn try_from(value: message_filter::AudienceFilter) -> Result<Self, Self::Error> {
 
-            match value.condition.ok_or(ModelConversionError::ValueNotProvided("condition"))? {
+            match value.condition.ok_or(ModelConversionError::ValueNotProvided("condition".into()))? {
                 Condition::Single(uuid) => {
                     let player = Uuid::from_str(&uuid.value).map_err(ModelConversionError::UuidConversion)?;
                     Ok(AudienceFilter::Uuid(player))
@@ -799,7 +799,7 @@ pub mod from_proto {
             let player = value
                 .player
                 .map(|op| Uuid::from_str(&op.value).map_err(ModelConversionError::UuidConversion))
-                .ok_or(ModelConversionError::ValueNotProvided("player"))??;
+                .ok_or(ModelConversionError::ValueNotProvided("player".into()))??;
             Ok(SourceFilter::Uuid(player))
         }
     }
@@ -889,7 +889,7 @@ pub mod from_proto {
         fn try_from(value: message_filter_pattern::MessageFilter) -> Result<Self, Self::Error> {
             match value
                 .condition
-                .ok_or(ModelConversionError::ValueNotProvided("condition"))?
+                .ok_or(ModelConversionError::ValueNotProvided("condition".into()))?
             {
                 message_filter_pattern::message_filter::Condition::InsertTimestamp(ts) => {
                     Ok(Self::InsertTimestamp(ts.try_into()?))
@@ -936,7 +936,7 @@ pub mod from_proto {
                         .items
                         .into_iter()
                         .next()
-                        .ok_or(ModelConversionError::ValueNotProvided("NOT items.next()"))?
+                        .ok_or(ModelConversionError::ValueNotProvided("NOT items.next()".into()))?
                         .try_into()?,
                 ))),
             }
@@ -966,7 +966,7 @@ pub mod from_proto {
         ) -> Result<Self, Self::Error> {
             match value
                 .r#type
-                .ok_or(ModelConversionError::ValueNotProvided("type"))?
+                .ok_or(ModelConversionError::ValueNotProvided("type".into()))?
             {
                 Type::Single(single) => Ok(Self::Single(single.try_into()?)),
                 Type::Composite(composite) => Ok(Self::Composite(composite.try_into()?)),
@@ -993,7 +993,7 @@ pub mod from_proto {
         fn try_from(value: chatq::MessageFilterPattern) -> Result<Self, Self::Error> {
             match value
                 .primary_condition
-                .ok_or(ModelConversionError::ValueNotProvided("primary_condition"))?
+                .ok_or(ModelConversionError::ValueNotProvided("primary_condition".into()))?
             {
                 PrimaryCondition::CompositeFilter(composite) => {
                     Ok(Self::Composite(composite.try_into()?))

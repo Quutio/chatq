@@ -62,7 +62,7 @@ mod from_proto {
         ts: prost_types::Timestamp,
     ) -> Result<NaiveDateTime, ModelConversionError> {
         Ok(DateTime::from_timestamp(ts.seconds, ts.nanos as u32)
-            .ok_or(ValueNotProvided("taken"))?
+            .ok_or(ValueNotProvided("taken".into()))?
             .naive_utc())
     }
 
@@ -104,12 +104,12 @@ mod from_proto {
         type Error = ModelConversionError;
 
         fn try_from(value: chatq::Snapshot) -> Result<Self, Self::Error> {
-            let taken = value.taken.ok_or(ValueNotProvided("taken"))?;
+            let taken = value.taken.ok_or(ValueNotProvided("taken".into()))?;
 
             Ok(Self {
-                id: value.id.ok_or(ValueNotProvided("id"))?.try_into()?,
-                target: value.target.ok_or(ValueNotProvided("target"))?.try_into()?,
-                query: value.query.ok_or(ValueNotProvided("query"))?.try_into()?,
+                id: value.id.ok_or(ValueNotProvided("id".into()))?.try_into()?,
+                target: value.target.ok_or(ValueNotProvided("target".into()))?.try_into()?,
+                query: value.query.ok_or(ValueNotProvided("query".into()))?.try_into()?,
                 taken: naive_from_proto(taken)?,
                 messages: value
                     .messages

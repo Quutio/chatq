@@ -64,7 +64,7 @@ pub mod from_proto {
         fn try_from(f: chatq::MessageSource) -> Result<Self, Self::Error> {
             match f
                 .source
-                .ok_or(ModelConversionError::ValueNotProvided("source"))?
+                .ok_or(ModelConversionError::ValueNotProvided("source".into()))?
             {
                 chatq::message_source::Source::Player(player) => {
                     Ok(MessageSource::new(Uuid::parse_str(&player.value)?))
@@ -89,7 +89,7 @@ pub mod from_proto {
         fn try_from(f: chatq::MessageAudience) -> Result<Self, Self::Error> {
             match f
                 .audience
-                .ok_or(ModelConversionError::ValueNotProvided("audience"))?
+                .ok_or(ModelConversionError::ValueNotProvided("audience".into()))?
             {
                 chatq::message_audience::Audience::Players(players) => Ok(MessageAudience::new(
                     players
@@ -151,15 +151,15 @@ pub mod from_proto {
             Ok(Self {
                 timestamp: naive_from_proto(
                     f.timestamp
-                        .ok_or(ModelConversionError::ValueNotProvided("timestamp"))?,
+                        .ok_or(ModelConversionError::ValueNotProvided("timestamp".into()))?,
                 )?,
                 source: f
                     .source
-                    .ok_or(ModelConversionError::ValueNotProvided("source"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("source".into()))?
                     .try_into()?,
                 audience: f
                     .audience
-                    .ok_or(ModelConversionError::ValueNotProvided("audience"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("audience".into()))?
                     .try_into()?,
                 content: f.content,
                 context: f.context,
@@ -175,15 +175,15 @@ pub mod from_proto {
                 id: f.id,
                 timestamp: naive_from_proto(
                     f.timestamp
-                        .ok_or(ModelConversionError::ValueNotProvided("timestamp"))?,
+                        .ok_or(ModelConversionError::ValueNotProvided("timestamp".into()))?,
                 )?,
                 source: f
                     .source
-                    .ok_or(ModelConversionError::ValueNotProvided("source"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("source".into()))?
                     .try_into()?,
                 audience: f
                     .audience
-                    .ok_or(ModelConversionError::ValueNotProvided("audience"))?
+                    .ok_or(ModelConversionError::ValueNotProvided("audience".into()))?
                     .try_into()?,
                 content: f.content,
                 context: f.context,

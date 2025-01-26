@@ -7,9 +7,15 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Introduce other audience filter kinds">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Sort proto structure">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-gateway/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/error.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/message.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/message.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/query.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/query.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -186,7 +192,7 @@
       <workItem from="1737324880761" duration="182000" />
       <workItem from="1737325071625" duration="5919000" />
       <workItem from="1737660277140" duration="46000" />
-      <workItem from="1737855098531" duration="504000" />
+      <workItem from="1737855098531" duration="1567000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -476,7 +482,15 @@
       <option name="project" value="LOCAL" />
       <updated>1737331042347</updated>
     </task>
-    <option name="localTasksCounter" value="37" />
+    <task id="LOCAL-00037" summary="Sort proto structure">
+      <option name="closed" value="true" />
+      <created>1737855708614</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1737855708614</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -494,7 +508,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Progress gateway" />
     <MESSAGE value="Progress gateway further" />
     <MESSAGE value="Add founding routes to gateway impl." />
     <MESSAGE value="Remove dist" />
@@ -519,6 +532,7 @@
     <MESSAGE value="Implement a query pagination system." />
     <MESSAGE value="Fix the absence of source_audiences insert" />
     <MESSAGE value="Introduce other audience filter kinds" />
-    <option name="LAST_COMMIT_MESSAGE" value="Introduce other audience filter kinds" />
+    <MESSAGE value="Sort proto structure" />
+    <option name="LAST_COMMIT_MESSAGE" value="Sort proto structure" />
   </component>
 </project>
