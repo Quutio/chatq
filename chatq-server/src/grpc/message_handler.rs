@@ -1,8 +1,7 @@
 use crate::message_handler::MessageHandler;
 use anyhow::Context;
 use chatq_types::chatq::{
-    FetchSnapshotResponse, GenerateSnapshotResponse, SnapshotFetchRequest,
-    SnapshotGenerateRequest,
+    FetchSnapshotResponse, GenerateSnapshotResponse, SnapshotFetchRequest, SnapshotGenerateRequest,
 };
 use chatq_types::data::query::{MessageQueryPattern, MessageQueryRequest};
 use tokio::sync::broadcast;
@@ -50,7 +49,6 @@ impl GrpcMessageHandler {
 
 #[async_trait]
 impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
-    
     async fn insert_messages(
         &self,
         request: Request<MessageInsertRequest>,
@@ -216,12 +214,10 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
                 snapshot: None,
                 map: None,
             })),
-            Some(snapshot) => {
-                Ok(Response::new(FetchSnapshotResponse {
-                    snapshot: Some(snapshot.into()),
-                    map: None,
-                }))
-            }
+            Some(snapshot) => Ok(Response::new(FetchSnapshotResponse {
+                snapshot: Some(snapshot.into()),
+                map: None,
+            })),
         };
     }
 }

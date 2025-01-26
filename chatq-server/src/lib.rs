@@ -1,18 +1,23 @@
+use anyhow::Context;
 use std::cmp::min;
 use std::collections::HashMap;
 use std::sync::Arc;
-use anyhow::Context;
 
+use chatq_types::data::filter::query::Queryable;
+use chatq_types::data::filter::{
+    to_player_seq, CompositeFilter, FilterItem, MessageFilter, MessageFilterPattern,
+    TimestampFilter,
+};
 use chrono::{NaiveDateTime, Utc};
 use sqlx::postgres::PgRow;
-use sqlx::{query, Executor, PgPool, Postgres, Row, Transaction, QueryBuilder};
+use sqlx::{query, Executor, PgPool, Postgres, QueryBuilder, Row, Transaction};
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use chatq_types::data::filter::query::Queryable;
-use chatq_types::data::filter::{CompositeFilter, FilterItem, MessageFilter, MessageFilterPattern, TimestampFilter, to_player_seq};
 
 use chatq_types::data::message::{Message, MessageAudience, MessageSource, MessageStub};
-use chatq_types::data::query::{Limit, MessageQueryPattern, MessageQueryRequest, MessageQueryRequestKind, QueryMessageResponse};
+use chatq_types::data::query::{
+    Limit, MessageQueryPattern, MessageQueryRequest, MessageQueryRequestKind, QueryMessageResponse,
+};
 use chatq_types::data::Snapshot;
 use num::integer::div_ceil;
 
@@ -31,7 +36,7 @@ pub struct SessionData {
 
 pub struct ChatQDao {
     pub pool: PgPool,
-    pub session_cache: Arc<RwLock<HashMap<Uuid, SessionData>>>
+    pub session_cache: Arc<RwLock<HashMap<Uuid, SessionData>>>,
 }
 
 struct MessageDetails {
@@ -47,7 +52,7 @@ impl<'a> ChatQDao {
     pub fn with_pool(pool: PgPool) -> Self {
         ChatQDao {
             pool,
-            session_cache: Arc::new(RwLock::new(HashMap::new()))
+            session_cache: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -65,16 +70,16 @@ RETURNING id
             &players,
             padded
         )
-            .fetch_one(&mut *conn)
-            .await?
-            .id;
+        .fetch_one(&mut *conn)
+        .await?
+        .id;
 
         Ok(audience_id)
     }
 
     async fn upsert_source<T>(conn: &mut T, player: &Uuid) -> anyhow::Result<i64>
-        where
-                for<'e> &'e mut T: Executor<'e, Database = Postgres>,
+    where
+        for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
         let source_id = sqlx::query!(
             r#"
@@ -84,9 +89,9 @@ RETURNING id
             "#,
             player
         )
-            .fetch_one(&mut *conn)
-            .await?
-            .id;
+        .fetch_one(&mut *conn)
+        .await?
+        .id;
 
         Ok(source_id)
     }
@@ -98,14 +103,14 @@ RETURNING id
         let source_id = Self::upsert_source(&mut *txn, stub.source.player()).await?;
 
         sqlx::query!(
-                r#"
+            r#"
 INSERT INTO source_audiences (source_id,audience_id)
 VALUES ($1,$2) ON CONFLICT DO NOTHING"#,
-                source_id,
-                audience_id
-            )
-            .execute(&mut *txn)
-            .await?;
+            source_id,
+            audience_id
+        )
+        .execute(&mut *txn)
+        .await?;
 
         let message_id = sqlx::query!(
             r#"
@@ -119,9 +124,9 @@ RETURNING id
             source_id,
             stub.context
         )
-            .fetch_one(&mut *txn)
-            .await?
-            .id;
+        .fetch_one(&mut *txn)
+        .await?
+        .id;
 
         txn.commit().await?;
 
@@ -240,22 +245,24 @@ RETURNING id, snapshot_taken
         txn.commit().await?;
         res
     }
-    
+
     pub async fn _query_messages<T>(
         conn: &mut T,
         query: &MessageQueryPattern,
     ) -> anyhow::Result<Vec<Message>>
-        where
-                for<'e> &'e mut T: Executor<'e, Database = Postgres>,
+    where
+        for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
-        let mut builder = QueryBuilder::new(r#"
+        let mut builder = QueryBuilder::new(
+            r#"
         SELECT messages.*
             FROM messages
             LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
             LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
             LEFT JOIN sources ON sources.id = messages.source_id
             LEFT JOIN audiences ON audiences.id = source_audiences.audience_id
-        "#);
+        "#,
+        );
 
         builder.push(" WHERE ");
         query.filter.append_query(&mut builder);
@@ -264,7 +271,8 @@ RETURNING id, snapshot_taken
 
         dbg!("{}", builder.sql());
 
-        let all_messages = builder.build()
+        let all_messages = builder
+            .build()
             .map(|row: PgRow| {
                 let message_id: i64 = row.get("id");
                 let issued: NaiveDateTime = row.get("issued");
@@ -282,14 +290,13 @@ RETURNING id, snapshot_taken
         let mut sources = HashMap::new();
 
         for message in &all_messages {
-            
             let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, message.3 as i32)
                 .fetch_one(&mut *conn)
                 .await?;
 
             audiences.insert(message.0, (bar.users, message.3));
         }
-        
+
         for message in &all_messages {
             let bar = sqlx::query!(
                 r#"
@@ -297,8 +304,8 @@ RETURNING id, snapshot_taken
                 "#,
                 message.4 as i32
             )
-                .fetch_one(&mut *conn)
-                .await?;
+            .fetch_one(&mut *conn)
+            .await?;
 
             sources.insert(message.0, (bar.uuid, message.4));
         }
@@ -336,21 +343,24 @@ RETURNING id, snapshot_taken
 
         Ok(res)
     }
-    
+
     async fn _message_details_query<T>(
         conn: &mut T,
-        all_messages: &[MessageDetails]
+        all_messages: &[MessageDetails],
     ) -> anyhow::Result<Vec<Message>>
-        where
-                for<'e> &'e mut T: Executor<'e, Database = Postgres>,
+    where
+        for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
         let mut audiences = HashMap::new();
         let mut sources = HashMap::new();
 
         for message in all_messages {
-            let bar = sqlx::query!(r#"SELECT * FROM audiences WHERE id = $1"#, message.audience_id as i32)
-                .fetch_one(&mut *conn)
-                .await?;
+            let bar = sqlx::query!(
+                r#"SELECT * FROM audiences WHERE id = $1"#,
+                message.audience_id as i32
+            )
+            .fetch_one(&mut *conn)
+            .await?;
 
             audiences.insert(message.id, (bar.users, message.audience_id));
         }
@@ -362,8 +372,8 @@ RETURNING id, snapshot_taken
                 "#,
                 message.source_id as i32
             )
-                .fetch_one(&mut *conn)
-                .await?;
+            .fetch_one(&mut *conn)
+            .await?;
 
             sources.insert(message.id, (bar.uuid, message.source_id));
         }
@@ -410,7 +420,6 @@ RETURNING id, snapshot_taken
     where
         for<'e> &'e mut T: Executor<'e, Database = Postgres>,
     {
-
         let count_base_sql = r#"SELECT COUNT(*) as count FROM ("#;
 
         let base_sql = r#"
@@ -424,7 +433,6 @@ RETURNING id, snapshot_taken
 
         match query.kind {
             MessageQueryRequestKind::Sessionless(sessionless) => {
-
                 let mut count_builder = QueryBuilder::new(count_base_sql);
 
                 let mut builder = QueryBuilder::new(base_sql);
@@ -433,24 +441,20 @@ RETURNING id, snapshot_taken
                 let page_size = sessionless.page_size;
 
                 match &mut query.limit {
-                    Limit::All => {
-                        query.limit = Limit::Amount(page_size)
-                    }
-                    Limit::Amount(amount) => {
-                        query.limit = Limit::Amount(min(page_size, *amount))
-                    }
+                    Limit::All => query.limit = Limit::Amount(page_size),
+                    Limit::Amount(amount) => query.limit = Limit::Amount(min(page_size, *amount)),
                 }
 
                 builder.push(" WHERE ");
                 query.filter.append_query(&mut builder);
                 builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
-                
+
                 count_builder.push(base_sql);
                 count_builder.push(" WHERE ");
                 query.filter.append_query(&mut count_builder);
                 count_builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
                 count_builder.push(") as derivedQuery");
-                
+
                 query.limit.append_query(&mut builder);
 
                 dbg!("{:#?}", &query);
@@ -459,7 +463,8 @@ RETURNING id, snapshot_taken
                 dbg!("{}", &builder.sql());
                 dbg!("{}", &count_builder.sql());
 
-                let count_messages = count_builder.build()
+                let count_messages = count_builder
+                    .build()
                     .map(|row: PgRow| {
                         let count: i64 = row.get("count");
                         count
@@ -467,8 +472,8 @@ RETURNING id, snapshot_taken
                     .fetch_one(&mut *conn)
                     .await?;
 
-
-                let all_messages = builder.build()
+                let all_messages = builder
+                    .build()
                     .map(|row: PgRow| {
                         let message_id: i64 = row.get("id");
                         let issued: NaiveDateTime = row.get("issued");
@@ -491,8 +496,6 @@ RETURNING id, snapshot_taken
 
                 dbg!("{:#?}", &query.filter);
 
-
-
                 let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
 
                 let mut write = self.session_cache.write().await;
@@ -503,7 +506,7 @@ RETURNING id, snapshot_taken
                     page_number: 1,
                     pattern: sessionless.pattern,
                 };
-                
+
                 write.insert(session.session_id, session.clone());
 
                 let resp = QueryMessageResponse {
@@ -516,14 +519,16 @@ RETURNING id, snapshot_taken
                 Ok(resp)
             }
             MessageQueryRequestKind::WithSession(with_session) => {
-
                 let session: SessionData;
 
                 {
                     let write = self.session_cache.write().await;
-                    session = write.get(&with_session.session_id).context("session not present")?.clone();
+                    session = write
+                        .get(&with_session.session_id)
+                        .context("session not present")?
+                        .clone();
                 }
-                
+
                 let mut query = session.pattern.clone();
                 let page_number = with_session.page_number;
                 let page_size = session.page_size;
@@ -535,43 +540,32 @@ RETURNING id, snapshot_taken
                 let mut builder = QueryBuilder::new(base_sql);
 
                 match query.limit {
-                    Limit::All => {
-                        query.limit = Limit::Amount(page_size)
-                    }
-                    Limit::Amount(amount) => {
-                        query.limit = Limit::Amount(min(page_size, amount))
-                    }
+                    Limit::All => query.limit = Limit::Amount(page_size),
+                    Limit::Amount(amount) => query.limit = Limit::Amount(min(page_size, amount)),
                 }
-                
+
                 let new_filter: MessageFilterPattern;
-                
-                let timestamp_filter = MessageFilter::InsertTimestamp(
-                    TimestampFilter::LessThanEqual(session.issued)
-                );
+
+                let timestamp_filter =
+                    MessageFilter::InsertTimestamp(TimestampFilter::LessThanEqual(session.issued));
 
                 dbg!("{:#?}", &query.filter);
-                
+
                 match query.filter {
                     MessageFilterPattern::Single(filter) => {
-                        new_filter = MessageFilterPattern::Composite(
-                            CompositeFilter::And(vec![
-                                FilterItem::Single(filter),
-                                FilterItem::Single(timestamp_filter)
-                            ])
-                        )
+                        new_filter = MessageFilterPattern::Composite(CompositeFilter::And(vec![
+                            FilterItem::Single(filter),
+                            FilterItem::Single(timestamp_filter),
+                        ]))
                     }
                     MessageFilterPattern::Composite(filter) => {
-                        new_filter = MessageFilterPattern::Composite(
-                            CompositeFilter::And(
-                                vec![
-                                    FilterItem::Single(timestamp_filter),
-                                    FilterItem::Composite(filter)
-                                ]
-                            )
-                        )
+                        new_filter = MessageFilterPattern::Composite(CompositeFilter::And(vec![
+                            FilterItem::Single(timestamp_filter),
+                            FilterItem::Composite(filter),
+                        ]))
                     }
                 }
-                
+
                 query.filter = new_filter.clone();
 
                 builder.push(" WHERE ");
@@ -588,12 +582,11 @@ RETURNING id, snapshot_taken
                 builder.push(" OFFSET ");
                 builder.push_bind(offset);
 
-
-
                 dbg!("{:?}", &new_filter);
                 dbg!("{}", &builder.sql());
 
-                let count_messages = count_builder.build()
+                let count_messages = count_builder
+                    .build()
                     .map(|row| {
                         let count: i64 = row.get("count");
                         count
@@ -601,7 +594,8 @@ RETURNING id, snapshot_taken
                     .fetch_one(&mut *conn)
                     .await?;
 
-                let all_messages = builder.build()
+                let all_messages = builder
+                    .build()
                     .map(|row: PgRow| {
                         let message_id: i64 = row.get("id");
                         let issued: NaiveDateTime = row.get("issued");
@@ -623,7 +617,7 @@ RETURNING id, snapshot_taken
                     .await?;
 
                 let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
-                
+
                 let resp = QueryMessageResponse {
                     session_key: session.session_id,
                     total_count: count_messages as i32,
@@ -631,7 +625,7 @@ RETURNING id, snapshot_taken
                     total_pages: div_ceil(count_messages as i32, page_size),
                     messages: res,
                 };
-                
+
                 {
                     let mut write = self.session_cache.write().await;
                     let session = SessionData {
