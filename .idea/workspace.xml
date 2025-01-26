@@ -7,10 +7,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Implement a query pagination system.">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Introduce other audience filter kinds">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,7 +52,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/multilanguage-projects/reportas-prime&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/rust-projects/markovtoy&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -177,7 +176,17 @@
       <workItem from="1725910684757" duration="953000" />
       <workItem from="1726338186310" duration="6353000" />
       <workItem from="1729457567158" duration="3360000" />
-      <workItem from="1730389061399" duration="5206000" />
+      <workItem from="1730389061399" duration="5873000" />
+      <workItem from="1730528259425" duration="671000" />
+      <workItem from="1730684952917" duration="51000" />
+      <workItem from="1733801107704" duration="756000" />
+      <workItem from="1734029018315" duration="8000" />
+      <workItem from="1734029288527" duration="9000" />
+      <workItem from="1737318556638" duration="5665000" />
+      <workItem from="1737324880761" duration="182000" />
+      <workItem from="1737325071625" duration="5919000" />
+      <workItem from="1737660277140" duration="46000" />
+      <workItem from="1737855098531" duration="504000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -451,7 +460,23 @@
       <option name="project" value="LOCAL" />
       <updated>1720060933648</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="Fix the absence of source_audiences insert">
+      <option name="closed" value="true" />
+      <created>1730396410618</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1730396410618</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Introduce other audience filter kinds">
+      <option name="closed" value="true" />
+      <created>1737331042347</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1737331042347</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -469,8 +494,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Remove unnecessary indirect protos" />
-    <MESSAGE value="Improve types crate" />
     <MESSAGE value="Progress gateway" />
     <MESSAGE value="Progress gateway further" />
     <MESSAGE value="Add founding routes to gateway impl." />
@@ -494,6 +517,8 @@
     <MESSAGE value="Start implementing pagination" />
     <MESSAGE value="Continue implementing pagination (WIP)" />
     <MESSAGE value="Implement a query pagination system." />
-    <option name="LAST_COMMIT_MESSAGE" value="Implement a query pagination system." />
+    <MESSAGE value="Fix the absence of source_audiences insert" />
+    <MESSAGE value="Introduce other audience filter kinds" />
+    <option name="LAST_COMMIT_MESSAGE" value="Introduce other audience filter kinds" />
   </component>
 </project>

@@ -1,4 +1,3 @@
-
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
@@ -14,34 +13,7 @@ service MessageHandler {
   rpc FetchSnapshot (SnapshotFetchRequest) returns (FetchSnapshotResponse);
 }
 
-message FetchSnapshotResponse {
-  Snapshot snapshot = 1;
-  NameUuidMap map = 2;
-}
-
-message SnapshotFetchRequest {
-  Uuid id = 1;
-}
-
-message GenerateSnapshotResponse {
-  Uuid id = 1;
-  Snapshot snapshot = 2;
-}
-
-message SnapshotGenerateRequest {
-  Uuid target = 1;
-  MessageQueryPattern query = 2;
-}
-
-message NameUuidMap {
-  repeated NameUuidEntry entries = 1;
-}
-
-message NameUuidEntry {
-  string uuid = 1;
-  string name = 2;
-}
-
+// Snapshot-related messages
 message Snapshot {
   Uuid id = 1;
   Uuid target = 2;
@@ -50,42 +22,38 @@ message Snapshot {
   repeated Message messages = 5;
 }
 
-message Uuid {
-  string value = 1;
+message SnapshotGenerateRequest {
+  Uuid target = 1;
+  MessageQueryPattern query = 2;
 }
 
-message Uuids {
-  repeated Uuid uuids = 1;
+message GenerateSnapshotResponse {
+  Uuid id = 1;
+  Snapshot snapshot = 2;
 }
 
-message Server {
-  string value = 1;
+message SnapshotFetchRequest {
+  Uuid id = 1;
 }
 
-message Plugin {
-  string value = 1;
+message FetchSnapshotResponse {
+  Snapshot snapshot = 1;
+  NameUuidMap map = 2;
+}
+// ---
+
+// Name-to-UUID mapping
+message NameUuidMap {
+  repeated NameUuidEntry entries = 1;
 }
 
-message Servers {
-  repeated Server servers = 1;
+message NameUuidEntry {
+  string uuid = 1;
+  string name = 2;
 }
+// ---
 
-message Plugins {
-  repeated Plugin plugins = 2;
-}
-
-message MessageAudience {
-  oneof audience {
-    Uuids players = 1;
-  }
-}
-
-message MessageSource {
-  oneof source {
-    Uuid player = 1;
-  }
-}
-
+// Core message structures
 message Message {
   int64 id = 1;
   google.protobuf.Timestamp timestamp = 2;
@@ -93,18 +61,6 @@ message Message {
   MessageAudience audience = 4;
   string content = 5;
   string context = 6;
-}
-
-message QueryMessageResponse {
-  Uuid session_key = 1;
-  int32 total_count = 2;
-  int32 current_page = 3;
-  int32 total_pages = 4;
-  repeated Message messages = 5;
-}
-
-message Messages {
-  repeated Message messages = 1;
 }
 
 message MessageStub {
@@ -115,6 +71,16 @@ message MessageStub {
   string context = 5;
 }
 
+message Messages {
+  repeated Message messages = 1;
+}
+
+message MessageBroadcast {
+  Message msg = 1;
+}
+// ---
+
+// Message handling
 message MessageInsertRequest {
   MessageStub stub = 1;
 }
@@ -122,9 +88,32 @@ message MessageInsertRequest {
 message MessageInsertResponse {
   Message message = 1;
 }
+// ---
 
-message MessageBroadcast {
-  Message msg = 1;
+// Query and filtering
+message MessageQueryRequest {
+  message Sessionless {
+    int32 page_size = 1;
+    MessageQueryPattern pattern = 2;
+  }
+
+  message WithSession {
+    Uuid session_id = 1;
+    int32 page_number = 2;
+  }
+
+  oneof kind {
+    Sessionless sessionless = 1;
+    WithSession with_session = 2;
+  }
+}
+
+message QueryMessageResponse {
+  Uuid session_key = 1;
+  int32 total_count = 2;
+  int32 current_page = 3;
+  int32 total_pages = 4;
+  repeated Message messages = 5;
 }
 
 message MessageFilterPattern {
@@ -144,7 +133,7 @@ message MessageFilterPattern {
         google.protobuf.Timestamp less_than_equal = 5;
       }
     }
-    
+
     message ContentFilter {
       oneof condition {
         string like = 1;
@@ -199,30 +188,55 @@ message MessageFilterPattern {
   }
 }
 
-message MessageListenRequest {
-  MessageFilterPattern pattern = 1;
-}
-
-message MessageQueryRequest {
-  message Sessionless {
-    int32 page_size = 1;
-    MessageQueryPattern pattern = 2;
-  }
-  message WithSession {
-    Uuid session_id = 1;
-    int32 page_number = 2;
-  }
-
-  oneof kind {
-    Sessionless sessionless = 1;
-    WithSession with_session = 2;
-  }
-}
-
 message MessageQueryPattern {
   oneof limit {
     bool all = 1;
     int32 amount = 2;
   }
+
   MessageFilterPattern filter = 4;
 }
+
+message MessageListenRequest {
+  MessageFilterPattern pattern = 1;
+}
+
+// Common structures
+message Uuid {
+  string value = 1;
+}
+
+message Uuids {
+  repeated Uuid uuids = 1;
+}
+
+message Server {
+  string value = 1;
+}
+
+message Plugin {
+  string value = 1;
+}
+
+message Servers {
+  repeated Server servers = 1;
+}
+
+message Plugins {
+  repeated Plugin plugins = 2;
+}
+// ---
+
+// Audience and source
+message MessageAudience {
+  oneof audience {
+    Uuids players = 1;
+  }
+}
+
+message MessageSource {
+  oneof source {
+    Uuid player = 1;
+  }
+}
+// ---
