@@ -1,4 +1,5 @@
 -- Add migration script here
+CREATE EXTENSION IF NOT EXISTS ltree;
 
 CREATE TABLE audiences
 (

@@ -21,8 +21,10 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Initialize work">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Update readme">
+      <change afterPath="$PROJECT_DIR$/chatq-server/migrations/20250621175454_add_context_path.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-server/migrations/20240218071102_revamp.sql" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/migrations/20240218071102_revamp.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,7 +42,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="feature/optimize-querying" />
+        <entry key="$PROJECT_DIR$" value="dev" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -66,7 +68,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "dev",
+    "git-widget-placeholder": "feature/context-revamp",
     "last_opened_file_path": "/home/tgv_/dev/rust-projects/markovtoy",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -516,7 +518,15 @@
       <option name="project" value="LOCAL" />
       <updated>1744358431854</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="Update readme">
+      <option name="closed" value="true" />
+      <created>1750525583934</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1750525583934</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -534,7 +544,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Add founding routes to gateway impl." />
     <MESSAGE value="Remove dist" />
     <MESSAGE value="Force inclusion of reporting target in snapshot generation." />
     <MESSAGE value="Reorganize data types to their own units" />
@@ -559,6 +568,7 @@
     <MESSAGE value="Introduce other audience filter kinds" />
     <MESSAGE value="Sort proto structure" />
     <MESSAGE value="Initialize work" />
-    <option name="LAST_COMMIT_MESSAGE" value="Initialize work" />
+    <MESSAGE value="Update readme" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update readme" />
   </component>
 </project>
