@@ -28,7 +28,7 @@ pub static COLOR_POOL: &[&str] = &[
 async fn fetch_snapshot() -> anyhow::Result<Snapshot> {
     let url = "http://localhost:3030".to_string();
 
-    let url = format!("{}/fetch-snapshot/927fd03c-c357-4623-a476-7a6d3b3008f4", url);
+    let url = format!("{}/fetch-snapshot/9bdf9e73-8a03-4919-a5d8-f185bea29d78", url);
     let res = reqwest::get(&url).await?.json::<Snapshot>().await?;
 
     log::info!("{:?}", res);

@@ -516,12 +516,14 @@ RETURNING id, snapshot_taken
                 let mut cursor_map = HashMap::new();
 
                 cursor_map.insert(1, Cursor::First);
-                cursor_map.insert(2, Cursor::Other(
-                    CursorData {
-                        last_id: res.last().unwrap().id,
-                        last_issued: res.last().unwrap().timestamp
-                    }
-                ));
+                if let Some(last) = res.last() {
+                    cursor_map.insert(2, Cursor::Other(
+                        CursorData {
+                            last_id: last.id,
+                            last_issued: last.timestamp
+                        }
+                    ));
+                }
 
                 let mut write = self.session_cache.write().await;
 
@@ -800,7 +802,7 @@ RETURNING id, snapshot_taken
 
                 // dbg!("{:?}", &new_filter);
                 // dbg!("{}", &builder.sql());
-                
+
             }
         }
     }
