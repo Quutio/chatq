@@ -24,7 +24,7 @@ use num::integer::div_ceil;
 pub mod grpc;
 pub mod message_handler;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SessionData {
     session_id: Uuid,
     issued: NaiveDateTime,
@@ -32,6 +32,21 @@ pub struct SessionData {
     #[allow(dead_code)]
     page_number: i32,
     pattern: MessageQueryPattern,
+    cursors: HashMap<i32, Cursor>,
+    total_pages: i32,
+    total_messages_count: i32
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Cursor {
+    First,
+    Other(CursorData)
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct CursorData {
+    last_issued: NaiveDateTime,
+    last_id: i64
 }
 
 pub struct ChatQDao {
@@ -266,7 +281,7 @@ RETURNING id, snapshot_taken
 
         builder.push(" WHERE ");
         query.filter.append_query(&mut builder);
-        builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
+        builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
         query.limit.append_query(&mut builder);
 
         dbg!("{}", builder.sql());
@@ -447,12 +462,12 @@ RETURNING id, snapshot_taken
 
                 builder.push(" WHERE ");
                 query.filter.append_query(&mut builder);
-                builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
+                builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
 
                 count_builder.push(base_sql);
                 count_builder.push(" WHERE ");
                 query.filter.append_query(&mut count_builder);
-                count_builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
+                count_builder.push(" GROUP BY messages.id ORDER BY messages.id DESC LIMIT 7777777");
                 count_builder.push(") as derivedQuery");
 
                 query.limit.append_query(&mut builder);
@@ -498,13 +513,31 @@ RETURNING id, snapshot_taken
 
                 let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
 
+                let mut cursor_map = HashMap::new();
+
+                cursor_map.insert(1, Cursor::First);
+                if let Some(last) = res.last() {
+                    cursor_map.insert(2, Cursor::Other(
+                        CursorData {
+                            last_id: last.id,
+                            last_issued: last.timestamp
+                        }
+                    ));
+                }
+
                 let mut write = self.session_cache.write().await;
+
+                let total_pages = div_ceil(count_messages as i32, sessionless.page_size);
+
                 let session = SessionData {
                     session_id: Uuid::new_v4(),
                     issued: Utc::now().naive_local(),
                     page_size: sessionless.page_size,
                     page_number: 1,
                     pattern: sessionless.pattern,
+                    cursors: cursor_map,
+                    total_pages: total_pages,
+                    total_messages_count: count_messages as i32,
                 };
 
                 write.insert(session.session_id, session.clone());
@@ -533,113 +566,243 @@ RETURNING id, snapshot_taken
                 let page_number = with_session.page_number;
                 let page_size = session.page_size;
 
-                let offset = (page_number - 1) * page_size;
-
-                let mut count_builder = QueryBuilder::new(count_base_sql);
-
                 let mut builder = QueryBuilder::new(base_sql);
-
-                match query.limit {
-                    Limit::All => query.limit = Limit::Amount(page_size),
-                    Limit::Amount(amount) => query.limit = Limit::Amount(min(page_size, amount)),
-                }
-
-                let new_filter: MessageFilterPattern;
-
-                let timestamp_filter =
-                    MessageFilter::InsertTimestamp(TimestampFilter::LessThanEqual(session.issued));
-
-                dbg!("{:#?}", &query.filter);
-
-                match query.filter {
-                    MessageFilterPattern::Single(filter) => {
-                        new_filter = MessageFilterPattern::Composite(CompositeFilter::And(vec![
-                            FilterItem::Single(filter),
-                            FilterItem::Single(timestamp_filter),
-                        ]))
+                
+                if let Some(cursor) = session.cursors.get(&page_number.into()) {
+                    
+                    let mut cursors_copied = session.cursors.clone();
+                    
+                    match query.limit {
+                        Limit::All => query.limit = Limit::Amount(page_size),
+                        Limit::Amount(amount) => query.limit = Limit::Amount(min(page_size, amount)),
                     }
-                    MessageFilterPattern::Composite(filter) => {
-                        new_filter = MessageFilterPattern::Composite(CompositeFilter::And(vec![
-                            FilterItem::Single(timestamp_filter),
-                            FilterItem::Composite(filter),
-                        ]))
-                    }
-                }
 
-                query.filter = new_filter.clone();
+                    let new_filter: MessageFilterPattern;
 
-                builder.push(" WHERE ");
-                query.filter.append_query(&mut builder);
-                builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
+                    let timestamp_filter = MessageFilter::InsertTimestamp(TimestampFilter::LessThanEqual(session.issued));
 
-                count_builder.push(base_sql);
-                count_builder.push(" WHERE ");
-                query.filter.append_query(&mut count_builder);
-                count_builder.push(" GROUP BY messages.id ORDER BY messages.issued DESC");
-                count_builder.push(") as derivedQuery");
+                    dbg!("{:#?}", &query.filter);
 
-                query.limit.append_query(&mut builder);
-                builder.push(" OFFSET ");
-                builder.push_bind(offset);
-
-                dbg!("{:?}", &new_filter);
-                dbg!("{}", &builder.sql());
-
-                let count_messages = count_builder
-                    .build()
-                    .map(|row| {
-                        let count: i64 = row.get("count");
-                        count
-                    })
-                    .fetch_one(&mut *conn)
-                    .await?;
-
-                let all_messages = builder
-                    .build()
-                    .map(|row: PgRow| {
-                        let message_id: i64 = row.get("id");
-                        let issued: NaiveDateTime = row.get("issued");
-                        let content: String = row.get("content");
-                        let audience_id: i64 = row.get("audience_id");
-                        let source_id: i64 = row.get("source_id");
-                        let context: String = row.get("context");
-
-                        MessageDetails {
-                            id: message_id,
-                            issued,
-                            content,
-                            audience_id,
-                            source_id,
-                            context,
+                    match query.filter {
+                        MessageFilterPattern::Single(filter) => {
+                            new_filter = MessageFilterPattern::Composite(CompositeFilter::And(vec![
+                                FilterItem::Single(filter),
+                                FilterItem::Single(timestamp_filter),
+                            ]))
                         }
-                    })
-                    .fetch_all(&mut *conn)
-                    .await?;
+                        MessageFilterPattern::Composite(filter) => {
+                            new_filter = MessageFilterPattern::Composite(CompositeFilter::And(vec![
+                                FilterItem::Single(timestamp_filter),
+                                FilterItem::Composite(filter),
+                            ]))
+                        }
+                    }
+                    
+                    query.filter = new_filter.clone();
+                    
+                    match cursor {
+                        Cursor::First => {
+                            builder.push(" WHERE ");
+                            query.filter.append_query(&mut builder);
+                            builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
+                        }
+                        Cursor::Other(cursor_data) => {
+                            builder.push(" WHERE ");
+                            
+                            builder.push("messages.issued < ");
+                            builder.push_bind(cursor_data.last_issued);
+                            builder.push(" AND messages.id < ");
+                            builder.push_bind(cursor_data.last_id);
 
-                let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
+                            builder.push(" AND ");
+                            query.filter.append_query(&mut builder);
+                            builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
+                        }
+                    }
+                    
+                    query.limit.append_query(&mut builder);
 
-                let resp = QueryMessageResponse {
-                    session_key: session.session_id,
-                    total_count: count_messages as i32,
-                    current_page: page_number,
-                    total_pages: div_ceil(count_messages as i32, page_size),
-                    messages: res,
-                };
+                    let all_messages = builder
+                        .build()
+                        .map(|row: PgRow| {
+                            let message_id: i64 = row.get("id");
+                            let issued: NaiveDateTime = row.get("issued");
+                            let content: String = row.get("content");
+                            let audience_id: i64 = row.get("audience_id");
+                            let source_id: i64 = row.get("source_id");
+                            let context: String = row.get("context");
 
-                {
-                    let mut write = self.session_cache.write().await;
-                    let session = SessionData {
-                        session_id: session.session_id,
-                        issued: session.issued,
-                        page_size,
-                        page_number,
-                        pattern: session.pattern.clone(),
+                            MessageDetails {
+                                id: message_id,
+                                issued,
+                                content,
+                                audience_id,
+                                source_id,
+                                context,
+                            }
+                        })
+                        .fetch_all(&mut *conn)
+                        .await?;
+                    
+                    let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
+                    
+                    let next_page_data = all_messages.last();
+                    if !session.cursors.contains_key(&(page_number+1)) {
+                        if let Some(next_page_cursor) = next_page_data {
+                            cursors_copied.insert(page_number+1, Cursor::Other(
+                                CursorData {
+                                    last_issued: next_page_cursor.issued,
+                                    last_id: next_page_cursor.id,
+                                }
+                            ));
+                        }
+                    }
+
+                    let resp = QueryMessageResponse {
+                        session_key: session.session_id,
+                        total_count: session.total_messages_count,
+                        current_page: page_number,
+                        total_pages: session.total_pages,
+                        messages: res,
                     };
 
-                    write.insert(session.session_id, session);
+                    {
+                        let mut write = self.session_cache.write().await;
+                        let session = SessionData {
+                            session_id: session.session_id,
+                            issued: session.issued,
+                            page_size,
+                            page_number,
+                            pattern: session.pattern.clone(),
+                            cursors: cursors_copied,
+                            total_pages: session.total_pages,
+                            total_messages_count: session.total_messages_count,
+                        };
+
+                        write.insert(session.session_id, session);
+                    }
+                    
+                    return Ok(resp)
+                    
+                } else {
+                    let offset = (page_number - 2)*page_size;
+                    
+                    builder.push(" WHERE ");
+                    query.filter.append_query(&mut builder);
+                    
+                    let limit = match query.limit {
+                        Limit::All => {
+                            Limit::Amount(page_size*2+1)
+                        }
+                        Limit::Amount(amount) => {
+                            Limit::Amount(amount*2+1)
+                        }
+                    };
+
+                    builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
+                    
+                    limit.append_query(&mut builder);
+                    
+                    builder.push(" OFFSET ");
+                    builder.push_bind(offset-1);
+                    
+                    let all_messages = builder
+                        .build()
+                        .map(|row: PgRow| {
+                            let message_id: i64 = row.get("id");
+                            let issued: NaiveDateTime = row.get("issued");
+                            let content: String = row.get("content");
+                            let audience_id: i64 = row.get("audience_id");
+                            let source_id: i64 = row.get("source_id");
+                            let context: String = row.get("context");
+
+                            MessageDetails {
+                                id: message_id,
+                                issued,
+                                content,
+                                audience_id,
+                                source_id,
+                                context,
+                            }
+                        })
+                        .fetch_all(&mut *conn)
+                        .await?;
+                    
+                    let prev_page_page_data = all_messages.get(1);
+                    let current_page_data = all_messages.get(page_size as usize);
+                    let next_page_data = all_messages.last();
+                    
+                    {
+                        let mut cursors_copied = session.cursors.clone();
+                        
+                        let mut write = self.session_cache.write().await;
+
+                        if !session.cursors.contains_key(&(page_number+1)) {
+                            if let Some(next_page_cursor) = next_page_data {
+                                cursors_copied.insert(page_number+1, Cursor::Other(
+                                    CursorData {
+                                        last_issued: next_page_cursor.issued,
+                                        last_id: next_page_cursor.id,
+                                    }
+                                ));
+                            }
+                        }
+                        if !session.cursors.contains_key(&(page_number)) {
+                            if let Some(current_page_cursor) = current_page_data {
+                                cursors_copied.insert(page_number, Cursor::Other(
+                                    CursorData {
+                                        last_issued: current_page_cursor.issued,
+                                        last_id: current_page_cursor.id,
+                                    }
+                                ));
+                            };
+                        }
+                        if !session.cursors.contains_key(&(page_number-1)) {
+                            if let Some(prev_page_cursor) = prev_page_page_data {
+                                cursors_copied.insert(page_number-1, Cursor::Other(
+                                    CursorData {
+                                        last_issued: prev_page_cursor.issued,
+                                        last_id: prev_page_cursor.id,
+                                    }
+                                ));
+                            };
+                        }
+
+                        let session = SessionData {
+                            session_id: session.session_id,
+                            issued: session.issued,
+                            page_size,
+                            page_number,
+                            pattern: session.pattern.clone(),
+                            cursors: cursors_copied,
+                            total_pages: session.total_pages,
+                            total_messages_count: session.total_messages_count
+                        };
+                        
+                        write.insert(session.session_id, session);
+                    }
+
+                    let mut real = all_messages.into_iter().rev().take(page_size as usize).collect::<Vec<_>>();
+                    real.reverse();
+                    
+                    let res = Self::_message_details_query(&mut *conn, &real).await?;
+
+                    let resp = QueryMessageResponse {
+                        session_key: session.session_id,
+                        total_count: session.total_messages_count,
+                        current_page: page_number,
+                        total_pages: session.total_pages,
+                        messages: res,
+                    };
+                    
+                    return Ok(resp)
                 }
 
-                Ok(resp)
+                // let mut count_builder = QueryBuilder::new(count_base_sql);
+
+                // dbg!("{:?}", &new_filter);
+                // dbg!("{}", &builder.sql());
+
             }
         }
     }

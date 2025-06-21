@@ -4,24 +4,34 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="CargoProjects">
-    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml">
+      <package file="$PROJECT_DIR$/chatq-gateway">
+        <enabledFeature name="default" />
+      </package>
+      <package file="$PROJECT_DIR$/chatq-server">
+        <enabledFeature name="default" />
+      </package>
+      <package file="$PROJECT_DIR$/chatq-types">
+        <enabledFeature name="default" />
+        <enabledFeature name="proto" />
+      </package>
+      <package file="$PROJECT_DIR$/chatq-webui">
+        <enabledFeature name="default" />
+      </package>
+    </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Sort proto structure">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Initialize work">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-gateway/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-gateway/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chatq-server/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/error.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/filter.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/message.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/message.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/query.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/query.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-webui/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-webui/src/main.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:dev" />
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
@@ -56,8 +66,9 @@
     &quot;Cargo.Test chatq.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/optimize-querying&quot;,
     &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/rust-projects/markovtoy&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -78,6 +89,9 @@
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
+  </component>
+  <component name="RsExternalLinterProjectSettings">
+    <option name="runOnTheFly" value="true" />
   </component>
   <component name="RunManager" selected="Cargo.Test chatq">
     <configuration name="Run chatq-server" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
@@ -193,6 +207,11 @@
       <workItem from="1737325071625" duration="5919000" />
       <workItem from="1737660277140" duration="46000" />
       <workItem from="1737855098531" duration="1567000" />
+      <workItem from="1744488138031" duration="492000" />
+      <workItem from="1744488637730" duration="5755000" />
+      <workItem from="1744514682094" duration="330000" />
+      <workItem from="1750520913715" duration="804000" />
+      <workItem from="1750521724736" duration="666000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -490,7 +509,15 @@
       <option name="project" value="LOCAL" />
       <updated>1737855708614</updated>
     </task>
-    <option name="localTasksCounter" value="38" />
+    <task id="LOCAL-00038" summary="Initialize work">
+      <option name="closed" value="true" />
+      <created>1744358431854</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1744358431854</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -508,7 +535,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Progress gateway further" />
     <MESSAGE value="Add founding routes to gateway impl." />
     <MESSAGE value="Remove dist" />
     <MESSAGE value="Force inclusion of reporting target in snapshot generation." />
@@ -533,6 +559,7 @@
     <MESSAGE value="Fix the absence of source_audiences insert" />
     <MESSAGE value="Introduce other audience filter kinds" />
     <MESSAGE value="Sort proto structure" />
-    <option name="LAST_COMMIT_MESSAGE" value="Sort proto structure" />
+    <MESSAGE value="Initialize work" />
+    <option name="LAST_COMMIT_MESSAGE" value="Initialize work" />
   </component>
 </project>
