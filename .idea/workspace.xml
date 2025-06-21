@@ -21,10 +21,9 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Update readme">
-      <change afterPath="$PROJECT_DIR$/chatq-server/migrations/20250621175454_add_context_path.sql" afterDir="false" />
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Declare migrations">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chatq-server/migrations/20240218071102_revamp.sql" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-server/migrations/20240218071102_revamp.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -526,7 +525,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750525583934</updated>
     </task>
-    <option name="localTasksCounter" value="40" />
+    <task id="LOCAL-00040" summary="Declare migrations">
+      <option name="closed" value="true" />
+      <created>1750528982528</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1750528982528</updated>
+    </task>
+    <option name="localTasksCounter" value="41" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -544,7 +551,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Remove dist" />
     <MESSAGE value="Force inclusion of reporting target in snapshot generation." />
     <MESSAGE value="Reorganize data types to their own units" />
     <MESSAGE value="Implement snapshot types." />
@@ -569,6 +575,7 @@
     <MESSAGE value="Sort proto structure" />
     <MESSAGE value="Initialize work" />
     <MESSAGE value="Update readme" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update readme" />
+    <MESSAGE value="Declare migrations" />
+    <option name="LAST_COMMIT_MESSAGE" value="Declare migrations" />
   </component>
 </project>

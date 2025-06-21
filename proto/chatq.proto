@@ -63,12 +63,26 @@ message Message {
   string context = 6;
 }
 
+message Tree {
+  oneof kind {
+    Empty empty = 1;
+    Node node = 2;
+  }
+}
+
+message Empty {}
+
+message Node {
+  string label = 1;
+  Tree tail = 2;
+}
+
 message MessageStub {
   google.protobuf.Timestamp timestamp = 1;
   MessageSource source = 2;
   MessageAudience audience = 3;
   string content = 4;
-  string context = 5;
+  Tree context = 5;
 }
 
 message Messages {
