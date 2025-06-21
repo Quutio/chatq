@@ -21,8 +21,9 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Declare migrations">
+    <list default="true" id="c2c2552d-36f7-4b2f-80a2-667c720635b9" name="Changes" comment="Augment context tree to protos">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatq-types/src/data/message.rs" beforeDir="false" afterPath="$PROJECT_DIR$/chatq-types/src/data/message.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/proto/chatq.proto" beforeDir="false" afterPath="$PROJECT_DIR$/proto/chatq.proto" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -60,27 +61,27 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Cargo.Test chatq.executor": "Run",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "feature/context-revamp",
-    "last_opened_file_path": "/home/tgv_/dev/rust-projects/markovtoy",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "org.rust.first.attach.projects.stats": "true",
-    "settings.editor.selected.configurable": "language.rust.cargo.check",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Cargo.Test chatq.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/context-revamp&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tgv_/dev/rust-projects/markovtoy&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects.stats&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/chatq-server" />
@@ -212,6 +213,7 @@
       <workItem from="1744514682094" duration="330000" />
       <workItem from="1750520913715" duration="804000" />
       <workItem from="1750521724736" duration="666000" />
+      <workItem from="1750533730043" duration="224000" />
     </task>
     <task id="LOCAL-00001" summary="Rename things">
       <option name="closed" value="true" />
@@ -533,7 +535,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750528982528</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="Augment context tree to protos">
+      <option name="closed" value="true" />
+      <created>1750530183450</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1750530183450</updated>
+    </task>
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -551,7 +561,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Force inclusion of reporting target in snapshot generation." />
     <MESSAGE value="Reorganize data types to their own units" />
     <MESSAGE value="Implement snapshot types." />
     <MESSAGE value="Initiate snapshot implementation" />
@@ -576,6 +585,7 @@
     <MESSAGE value="Initialize work" />
     <MESSAGE value="Update readme" />
     <MESSAGE value="Declare migrations" />
-    <option name="LAST_COMMIT_MESSAGE" value="Declare migrations" />
+    <MESSAGE value="Augment context tree to protos" />
+    <option name="LAST_COMMIT_MESSAGE" value="Augment context tree to protos" />
   </component>
 </project>

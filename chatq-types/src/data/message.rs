@@ -17,6 +17,18 @@ impl MessageAudience {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub enum Tree {
+    Empty,
+    Node(Box<Node>),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct Node {
+    pub label: String,
+    pub tail: Box<Tree>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct MessageSource {
     player: Uuid,
 }
@@ -36,7 +48,7 @@ pub struct MessageStub {
     pub source: MessageSource,
     pub audience: MessageAudience,
     pub content: String,
-    pub context: String,
+    pub context: Tree,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -46,15 +58,16 @@ pub struct Message {
     pub source: MessageSource,
     pub audience: MessageAudience,
     pub content: String,
-    pub context: String,
+    pub context: Tree,
 }
 
 #[cfg(feature = "proto")]
 pub mod from_proto {
     use crate::chatq;
+    use crate::chatq::tree::Kind;
     use crate::data::error::ModelConversionError;
     use crate::data::from_proto::{naive_from_proto, proto_from_naive};
-    use crate::data::message::{Message, MessageAudience, MessageSource, MessageStub};
+    use crate::data::message::{Message, MessageAudience, MessageSource, MessageStub, Node, Tree};
     use std::str::FromStr;
     use uuid::Uuid;
 
@@ -132,6 +145,46 @@ pub mod from_proto {
         }
     }
 
+    impl From<Tree> for chatq::Tree {
+        fn from(value: Tree) -> Self {
+            match value {
+                Tree::Empty => chatq::Tree {
+                    kind: Some(Kind::Empty(Default::default())),
+                },
+                Tree::Node(node) => chatq::Tree {
+                    kind: Some(Kind::Node(Box::new(chatq::Node {
+                        label: node.label,
+                        tail: Some(Box::new((*node.tail).into())),
+                    }))),
+                },
+            }
+        }
+    }
+
+    impl TryFrom<chatq::Tree> for Tree {
+        type Error = ModelConversionError;
+
+        fn try_from(value: chatq::Tree) -> Result<Self, Self::Error> {
+            let kind = value
+                .kind
+                .ok_or(ModelConversionError::ValueNotProvided("kind".into()))?;
+
+            match kind {
+                Kind::Empty(_) => Ok(Tree::Empty),
+                Kind::Node(node) => {
+                    let tail: Tree = (*node
+                        .tail
+                        .ok_or(ModelConversionError::ValueNotProvided("tail".into()))?)
+                    .try_into()?;
+                    Ok(Tree::Node(Box::new(Node {
+                        label: node.label,
+                        tail: Box::new(tail),
+                    })))
+                }
+            }
+        }
+    }
+
     impl From<MessageStub> for chatq::MessageStub {
         fn from(f: MessageStub) -> Self {
             Self {
@@ -139,7 +192,7 @@ pub mod from_proto {
                 source: Some(f.source.into()),
                 audience: Some(f.audience.into()),
                 content: f.content,
-                context: f.context,
+                context: Some(f.context.into()),
             }
         }
     }
@@ -162,7 +215,9 @@ pub mod from_proto {
                     .ok_or(ModelConversionError::ValueNotProvided("audience".into()))?
                     .try_into()?,
                 content: f.content,
-                context: f.context,
+                context: f.context
+                    .ok_or(ModelConversionError::ValueNotProvided("context".into()))?
+                    .try_into()?,
             })
         }
     }
@@ -186,7 +241,10 @@ pub mod from_proto {
                     .ok_or(ModelConversionError::ValueNotProvided("audience".into()))?
                     .try_into()?,
                 content: f.content,
-                context: f.context,
+                context: f
+                    .context
+                    .ok_or(ModelConversionError::ValueNotProvided("context".into()))?
+                    .try_into()?,
             })
         }
     }
@@ -199,7 +257,7 @@ pub mod from_proto {
                 source: Some(f.source.into()),
                 audience: Some(f.audience.into()),
                 content: f.content,
-                context: f.context,
+                context: Some(f.context.into()),
             }
         }
     }

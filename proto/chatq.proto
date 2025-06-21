@@ -60,7 +60,7 @@ message Message {
   MessageSource source = 3;
   MessageAudience audience = 4;
   string content = 5;
-  string context = 6;
+  Tree context = 6;
 }
 
 message Tree {
