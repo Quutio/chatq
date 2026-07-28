@@ -1,8 +1,17 @@
+use sqlx::{ConnectOptions, PgPool};
+use sqlx::postgres::PgConnectOptions;
 use chatq_types::chatq::message_handler_server::MessageHandlerServer;
 use lib::grpc::message_handler::GrpcMessageHandler;
 
+use std::str::FromStr;
+use std::sync::Arc;
+use anyhow::Context;
 use tonic::transport::Server;
 use tracing::info;
+use tracing::log::LevelFilter;
+use lib::{logic, ChatQDao};
+use lib::event_channel::BroadcastMessageEventChannel;
+
 
 #[tokio::main]
 pub async fn main() {
@@ -16,7 +25,18 @@ pub async fn main() {
 
     let addr = addr.parse().unwrap();
 
-    let handler = GrpcMessageHandler::new(db_url).await.unwrap();
+    let pool = PgPool::connect_with(
+        PgConnectOptions::from_str(db_url).context("failed to parse pool address").unwrap().log_statements(LevelFilter::Info),
+    ).await.context("failed to connect to postgresql database").unwrap();
+
+    let db = ChatQDao::with_pool(pool);
+
+    let (tx, _) = tokio::sync::broadcast::channel(128);
+
+    let handler = GrpcMessageHandler::new(logic::Ctx {
+        repo: Arc::new(db),
+        channel: Arc::new(BroadcastMessageEventChannel::new(tx.clone())),
+    });
     let handler_svc = MessageHandlerServer::new(handler);
 
     info!("Starting server {}", addr);

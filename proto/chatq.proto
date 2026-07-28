@@ -95,6 +95,7 @@ message MessageQueryRequest {
   message Sessionless {
     int32 page_size = 1;
     MessageQueryPattern pattern = 2;
+    int32 row_limit = 3;
   }
 
   message WithSession {

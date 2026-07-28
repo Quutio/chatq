@@ -19,6 +19,7 @@ pub struct MessageQueryPattern {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Sessionless {
     pub page_size: i32,
+    pub row_limit: Option<i32>,
     pub pattern: MessageQueryPattern,
 }
 
@@ -125,6 +126,13 @@ pub mod from_proto {
                 Kind::Sessionless(sessionless) => Ok(Self {
                     kind: MessageQueryRequestKind::Sessionless(Sessionless {
                         page_size: sessionless.page_size,
+                        row_limit: {
+                            match sessionless.row_limit {
+                                -1 => None,
+                                0 => Some(77777),
+                                x => Some(x),
+                            }
+                        },
                         pattern: sessionless
                             .pattern
                             .ok_or(ModelConversionError::ValueNotProvided("pattern".into()))?
@@ -150,6 +158,16 @@ pub mod from_proto {
                 MessageQueryRequestKind::Sessionless(sessionless) => Self {
                     kind: Some(Kind::Sessionless(
                         chatq::message_query_request::Sessionless {
+                            row_limit: {
+                                match sessionless.row_limit {
+                                    None => {
+                                        777777
+                                    }
+                                    Some(x) => {
+                                        x
+                                    }
+                                }
+                            },
                             page_size: sessionless.page_size,
                             pattern: Some(sessionless.pattern.into()),
                         },

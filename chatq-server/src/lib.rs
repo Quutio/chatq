@@ -1,6 +1,7 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use std::cmp::min;
 use std::collections::HashMap;
+use std::fmt::format;
 use std::sync::Arc;
 
 use chatq_types::data::filter::query::Queryable;
@@ -20,9 +21,14 @@ use chatq_types::data::query::{
 };
 use chatq_types::data::Snapshot;
 use num::integer::div_ceil;
+use tonic::async_trait;
+use crate::ports::{MessageRepo, MessageRepoResult, RepoError};
 
 pub mod grpc;
 pub mod message_handler;
+pub mod ports;
+pub mod logic;
+pub mod event_channel;
 
 #[derive(Clone, Debug)]
 pub struct SessionData {
@@ -61,6 +67,19 @@ struct MessageDetails {
     audience_id: i64,
     source_id: i64,
     context: String,
+}
+
+#[async_trait]
+impl<'a> MessageRepo for ChatQDao {
+    async fn insert(&self, message: MessageStub) -> MessageRepoResult<Message> {
+        self.insert_message(&message).await
+            .map_err(|err| RepoError::Arbitrary(anyhow!(err).to_string()))
+    }
+
+    async fn query(&self, query: MessageQueryRequest) -> MessageRepoResult<QueryMessageResponse> {
+        self.query_messages_raw(query).await
+            .map_err(|err| RepoError::Arbitrary(anyhow!(err).to_string()))
+    }
 }
 
 impl<'a> ChatQDao {
@@ -111,7 +130,7 @@ RETURNING id
         Ok(source_id)
     }
 
-    async fn insert_message(&self, stub: &MessageStub) -> anyhow::Result<Message> {
+    pub(crate) async fn insert_message(&self, stub: &MessageStub) -> anyhow::Result<Message> {
         let mut txn = self.pool.begin().await?;
 
         let audience_id = Self::upsert_audience(&mut *txn, stub.audience.players()).await?;
@@ -427,7 +446,7 @@ RETURNING id, snapshot_taken
         Ok(res)
     }
 
-    pub async fn _query_messages_raw<T>(
+    pub(crate) async fn _query_messages_raw<T>(
         &self,
         conn: &mut T,
         query: MessageQueryRequest,
@@ -460,6 +479,7 @@ RETURNING id, snapshot_taken
                     Limit::Amount(amount) => query.limit = Limit::Amount(min(page_size, *amount)),
                 }
 
+
                 builder.push(" WHERE ");
                 query.filter.append_query(&mut builder);
                 builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
@@ -467,7 +487,7 @@ RETURNING id, snapshot_taken
                 count_builder.push(base_sql);
                 count_builder.push(" WHERE ");
                 query.filter.append_query(&mut count_builder);
-                count_builder.push(" GROUP BY messages.id ORDER BY messages.id DESC LIMIT 7777777");
+                count_builder.push(format!(" GROUP BY messages.id ORDER BY messages.id DESC LIMIT {}", sessionless.row_limit.unwrap_or(7777777)));
                 count_builder.push(") as derivedQuery");
 
                 query.limit.append_query(&mut builder);
@@ -807,17 +827,7 @@ RETURNING id, snapshot_taken
         }
     }
 
-    pub async fn query_messages(
-        &self,
-        query: &MessageQueryPattern,
-    ) -> anyhow::Result<Vec<Message>> {
-        let mut txn: Transaction<Postgres> = self.pool.begin().await?;
-        let res = Self::_query_messages(&mut *txn, query).await;
-        txn.commit().await?;
-        res
-    }
-
-    pub async fn query_messages_raw(
+    pub(crate) async fn query_messages_raw(
         &self,
         query: MessageQueryRequest,
     ) -> anyhow::Result<QueryMessageResponse> {
