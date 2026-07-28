@@ -31,11 +31,9 @@ pub async fn main() {
 
     let db = ChatQDao::with_pool(pool);
 
-    let (tx, _) = tokio::sync::broadcast::channel(128);
-
     let handler = GrpcMessageHandler::new(logic::Ctx {
         repo: Arc::new(db),
-        channel: Arc::new(BroadcastMessageEventChannel::new(tx.clone())),
+        channel: Arc::new(BroadcastMessageEventChannel::new(128)),
     });
     let handler_svc = MessageHandlerServer::new(handler);
 

@@ -8,7 +8,8 @@ pub struct BroadcastMessageEventChannel {
 }
 
 impl BroadcastMessageEventChannel {
-    pub fn new(tx: tokio::sync::broadcast::Sender<MessageEvent>) -> Self {
+    pub fn new(buffer: usize) -> Self {
+        let (tx, _) = tokio::sync::broadcast::channel(buffer);
         Self { tx }
     }
 }
@@ -16,8 +17,7 @@ impl BroadcastMessageEventChannel {
 #[async_trait]
 impl MessageEventChannel for BroadcastMessageEventChannel {
     fn publish(&self, event: MessageEvent) -> MessageEventChannelResult<()> {
-        let _ = self.tx.send(event)
-            .map_err(|err| MessageEventChannelError::Arbitrary(anyhow!(err).to_string()))?;
+        let _ = self.tx.send(event);
         Ok(())
     }
 

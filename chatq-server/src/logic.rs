@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use tracing::instrument;
 use chatq_types::data::message::{Message, MessageStub};
 use chatq_types::data::query::{MessageQueryPattern, MessageQueryRequest, MessageQueryRequestKind, QueryMessageResponse};
 use crate::ports::{MessageEvent, MessageEventChannel, MessageEventChannelError, MessageRepo, RepoError};
@@ -22,6 +23,7 @@ pub enum LogicError {
 
 pub type LogicResult<T> = Result<T, LogicError>;
 
+#[instrument(skip(ctx))]
 pub async fn insert_message<R, E>(ctx: &Ctx<R, E>, stub: MessageStub) -> LogicResult<Message>
 where
     R: MessageRepo,
@@ -35,6 +37,7 @@ where
     Ok(message)
 }
 
+#[instrument(skip(ctx))]
 pub async fn query_messages<R, E>(ctx: &Ctx<R, E>, query: MessageQueryRequest) -> LogicResult<QueryMessageResponse>
 where
     R: MessageRepo,

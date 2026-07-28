@@ -49,7 +49,7 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
             })?
         )
             .await
-            .map_err(|err| Status::aborted(err.to_string()))?;
+            .map_err(|err| Status::aborted(format!("Failed to insert message: {}", err)))?;
 
         Ok(Response::new(MessageInsertResponse {
             message: Some(insert.into()),
