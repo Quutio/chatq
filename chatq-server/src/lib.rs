@@ -1,8 +1,7 @@
-#![feature(int_roundings)]
-
 use anyhow::{anyhow, Context};
 use std::cmp::min;
 use std::collections::HashMap;
+use std::fmt::format;
 use std::sync::Arc;
 
 use chatq_types::data::filter::query::Queryable;
@@ -11,11 +10,9 @@ use chatq_types::data::filter::{
     TimestampFilter,
 };
 use chrono::{NaiveDateTime, Utc};
-use num::integer::div_ceil;
 use sqlx::postgres::PgRow;
 use sqlx::{query, Executor, PgPool, Postgres, QueryBuilder, Row, Transaction};
 use tokio::sync::RwLock;
-use tonic::async_trait;
 use uuid::Uuid;
 
 use chatq_types::data::message::{Message, MessageAudience, MessageSource, MessageStub};
@@ -23,6 +20,8 @@ use chatq_types::data::query::{
     Limit, MessageQueryPattern, MessageQueryRequest, MessageQueryRequestKind, QueryMessageResponse,
 };
 use chatq_types::data::Snapshot;
+use num::integer::div_ceil;
+use tonic::async_trait;
 use crate::ports::{MessageRepo, MessageRepoResult, RepoError};
 
 pub mod grpc;
@@ -61,21 +60,29 @@ pub struct ChatQDao {
     pub session_cache: Arc<RwLock<HashMap<Uuid, SessionData>>>,
 }
 
-// Rust 1.75+ natively supports async traits, no #[async_trait] needed
+struct MessageDetails {
+    id: i64,
+    issued: chrono::NaiveDateTime,
+    content: String,
+    audience_id: i64,
+    source_id: i64,
+    context: String,
+}
+
 #[async_trait]
-impl MessageRepo for ChatQDao {
+impl<'a> MessageRepo for ChatQDao {
     async fn insert(&self, message: MessageStub) -> MessageRepoResult<Message> {
         self.insert_message(&message).await
-            .map_err(|err| RepoError::Arbitrary(err.to_string()))
+            .map_err(|err| RepoError::Arbitrary(anyhow!(err).to_string()))
     }
 
     async fn query(&self, query: MessageQueryRequest) -> MessageRepoResult<QueryMessageResponse> {
         self.query_messages_raw(query).await
-            .map_err(|err| RepoError::Arbitrary(err.to_string()))
+            .map_err(|err| RepoError::Arbitrary(anyhow!(err).to_string()))
     }
 }
 
-impl ChatQDao {
+impl<'a> ChatQDao {
     pub fn with_pool(pool: PgPool) -> Self {
         ChatQDao {
             pool,
@@ -248,7 +255,6 @@ RETURNING id, snapshot_taken
             snapshot_query.snapshot_taken,
             snapshot_query.target,
         );
-
         let messages = Self::_query_messages(&mut *conn, &query).await?;
 
         let target = query!(
@@ -283,40 +289,157 @@ RETURNING id, snapshot_taken
     {
         let mut builder = QueryBuilder::new(
             r#"
-        SELECT
-            messages.id,
-            messages.issued as timestamp,
-            messages.content,
-            messages.context,
-            sources.uuid as source_uuid,
-            audiences.users as audience_users
-        FROM messages
-        INNER JOIN sources ON sources.id = messages.source_id
-        INNER JOIN audiences ON audiences.id = messages.audience_id
+        SELECT messages.*
+            FROM messages
+            LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
+            LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
+            LEFT JOIN sources ON sources.id = messages.source_id
+            LEFT JOIN audiences ON audiences.id = source_audiences.audience_id
         "#,
         );
 
         builder.push(" WHERE ");
         query.filter.append_query(&mut builder);
-        builder.push(" ORDER BY messages.id DESC ");
+        builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
         query.limit.append_query(&mut builder);
+
+        dbg!("{}", builder.sql());
 
         let all_messages = builder
             .build()
             .map(|row: PgRow| {
-                Message {
-                    id: row.get("id"),
-                    timestamp: row.get("timestamp"),
-                    source: MessageSource::new(row.get("source_uuid")),
-                    audience: MessageAudience::new(row.get("audience_users")),
-                    content: row.get("content"),
-                    context: row.get("context"),
-                }
+                let message_id: i64 = row.get("id");
+                let issued: NaiveDateTime = row.get("issued");
+                let content: String = row.get("content");
+                let audience_id: i64 = row.get("audience_id");
+                let source_id: i64 = row.get("source_id");
+                let context: String = row.get("context");
+
+                (message_id, issued, content, audience_id, source_id, context)
             })
             .fetch_all(&mut *conn)
             .await?;
 
-        Ok(all_messages)
+        if all_messages.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let audience_ids: Vec<i64> = all_messages.iter().map(|m| m.3).collect();
+        let source_ids: Vec<i64> = all_messages.iter().map(|m| m.4).collect();
+
+        let audiences_list = sqlx::query!(
+        r#"SELECT id, users FROM audiences WHERE id = ANY($1)"#,
+        &audience_ids
+    )
+            .fetch_all(&mut *conn)
+            .await?;
+
+        let mut audiences = HashMap::new();
+        for aud in audiences_list {
+            audiences.insert(aud.id as i64, aud.users);
+        }
+
+        let sources_list = sqlx::query!(
+        r#"SELECT id, uuid FROM sources WHERE id = ANY($1)"#,
+        &source_ids
+        )
+            .fetch_all(&mut *conn)
+            .await?;
+
+        let mut sources = HashMap::new();
+        for src in sources_list {
+            sources.insert(src.id as i64, src.uuid);
+        }
+
+        let mut res: Vec<Message> = Vec::with_capacity(all_messages.len());
+
+        for message in &all_messages {
+            let users = match audiences.get(&(message.3 as i64)) {
+                Some(u) => u,
+                None => continue,
+            };
+            let source_uuid = match sources.get(&(message.4 as i64)) {
+                Some(u) => u,
+                None => continue,
+            };
+
+            res.push(Message {
+                id: message.0,
+                timestamp: message.1,
+                source: MessageSource::new(source_uuid.clone()),
+                audience: MessageAudience::new(users.clone()),
+                content: message.2.to_string(),
+                context: message.5.to_string(),
+            })
+        }
+
+        Ok(res)
+    }
+
+    async fn _message_details_query<T>(
+        conn: &mut T,
+        all_messages: &[MessageDetails],
+    ) -> anyhow::Result<Vec<Message>>
+    where
+            for<'e> &'e mut T: Executor<'e, Database = Postgres>,
+    {
+        if (all_messages.is_empty()) {
+            return Ok(Vec::new());
+        }
+
+        let audiences: HashMap<i64, Vec<Uuid>> = HashMap::new();
+        let sources: HashMap<i64, Uuid> = HashMap::new();
+
+        let audience_ids: Vec<i64> = all_messages.iter().map(|m| m.audience_id).collect();
+        let source_ids: Vec<i64> = all_messages.iter().map(|m| m.source_id).collect();
+
+        let audience_list = sqlx::query!(
+            r#"SELECT id, users FROM audiences WHERE id = ANY($1)"#,
+            &audience_ids
+        )
+            .fetch_all(&mut *conn)
+            .await?;
+
+        let mut audiences = HashMap::new();
+        for aud in audience_list {
+            audiences.insert(aud.id, aud.users);
+        }
+
+        let sources_list = sqlx::query!(
+            r#"SELECT id, uuid FROM sources WHERE id = ANY($1)"#,
+            &source_ids
+        )
+            .fetch_all(&mut *conn)
+            .await?;
+
+        let mut sources = HashMap::new();
+        for src in sources_list {
+            sources.insert(src.id, src.uuid);
+        }
+
+        let mut res: Vec<Message> = Vec::with_capacity(all_messages.len());
+
+        for message in all_messages {
+            let users = match audiences.get(&message.audience_id) {
+                Some(u) => u,
+                None => continue,
+            };
+            let source_uuid = match sources.get(&message.source_id) {
+                Some(u) => u,
+                None => continue,
+            };
+
+            res.push(Message {
+                id: message.id,
+                timestamp: message.issued,
+                source: MessageSource::new(source_uuid.clone()),
+                audience: MessageAudience::new(users.clone()),
+                content: message.content.to_string(),
+                context: message.context.to_string(),
+            });
+        }
+
+        Ok(res)
     }
 
     pub(crate) async fn _query_messages_raw<T>(
@@ -330,21 +453,18 @@ RETURNING id, snapshot_taken
         let count_base_sql = r#"SELECT COUNT(*) as count FROM ("#;
 
         let base_sql = r#"
-        SELECT
-            messages.id,
-            messages.issued as timestamp,
-            messages.content,
-            messages.context,
-            sources.uuid as source_uuid,
-            audiences.users as audience_users
-        FROM messages
-        INNER JOIN sources ON sources.id = messages.source_id
-        INNER JOIN audiences ON audiences.id = messages.audience_id
+        SELECT messages.*
+            FROM messages
+            LEFT JOIN source_audiences ON source_audiences.audience_id = messages.audience_id
+            LEFT JOIN sources as audience_sources ON audience_sources.id = source_audiences.source_id
+            LEFT JOIN sources ON sources.id = messages.source_id
+            LEFT JOIN audiences ON audiences.id = source_audiences.audience_id
         "#;
 
         match query.kind {
             MessageQueryRequestKind::Sessionless(sessionless) => {
                 let mut count_builder = QueryBuilder::new(count_base_sql);
+
                 let mut builder = QueryBuilder::new(base_sql);
 
                 let mut query = sessionless.pattern.clone();
@@ -355,18 +475,24 @@ RETURNING id, snapshot_taken
                     Limit::Amount(amount) => query.limit = Limit::Amount(min(page_size, *amount)),
                 }
 
+
                 builder.push(" WHERE ");
                 query.filter.append_query(&mut builder);
-                builder.push(" ORDER BY messages.id DESC ");
+                builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
 
                 count_builder.push(base_sql);
                 count_builder.push(" WHERE ");
                 query.filter.append_query(&mut count_builder);
-                count_builder.push(" ORDER BY messages.id DESC LIMIT ");
-                count_builder.push_bind(sessionless.row_limit.unwrap_or(7777777));
+                count_builder.push(format!(" GROUP BY messages.id ORDER BY messages.id DESC LIMIT {}", sessionless.row_limit.unwrap_or(7777777)));
                 count_builder.push(") as derivedQuery");
 
                 query.limit.append_query(&mut builder);
+
+                dbg!("{:#?}", &query);
+                dbg!("{}", &builder.sql());
+
+                dbg!("{}", &builder.sql());
+                dbg!("{}", &count_builder.sql());
 
                 let count_messages = count_builder
                     .build()
@@ -377,24 +503,35 @@ RETURNING id, snapshot_taken
                     .fetch_one(&mut *conn)
                     .await?;
 
-                let res = builder
+                let all_messages = builder
                     .build()
                     .map(|row: PgRow| {
-                        Message {
-                            id: row.get("id"),
-                            timestamp: row.get("timestamp"),
-                            source: MessageSource::new(row.get("source_uuid")),
-                            audience: MessageAudience::new(row.get("audience_users")),
-                            content: row.get("content"),
-                            context: row.get("context"),
+                        let message_id: i64 = row.get("id");
+                        let issued: NaiveDateTime = row.get("issued");
+                        let content: String = row.get("content");
+                        let audience_id: i64 = row.get("audience_id");
+                        let source_id: i64 = row.get("source_id");
+                        let context: String = row.get("context");
+
+                        MessageDetails {
+                            id: message_id,
+                            issued,
+                            content,
+                            audience_id,
+                            source_id,
+                            context,
                         }
                     })
                     .fetch_all(&mut *conn)
                     .await?;
 
-                let mut cursor_map = HashMap::new();
-                cursor_map.insert(1, Cursor::First);
+                dbg!("{:#?}", &query.filter);
 
+                let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
+
+                let mut cursor_map = HashMap::new();
+
+                cursor_map.insert(1, Cursor::First);
                 if let Some(last) = res.last() {
                     cursor_map.insert(2, Cursor::Other(
                         CursorData {
@@ -404,7 +541,9 @@ RETURNING id, snapshot_taken
                     ));
                 }
 
-                let total_pages = (count_messages as i32).div_ceil(sessionless.page_size);
+                let mut write = self.session_cache.write().await;
+
+                let total_pages = div_ceil(count_messages as i32, sessionless.page_size);
 
                 let session = SessionData {
                     session_id: Uuid::new_v4(),
@@ -413,32 +552,31 @@ RETURNING id, snapshot_taken
                     page_number: 1,
                     pattern: sessionless.pattern,
                     cursors: cursor_map,
-                    total_pages,
+                    total_pages: total_pages,
                     total_messages_count: count_messages as i32,
                 };
 
-                // Acquire write lock only at the end to minimize blocking time
-                {
-                    let mut write = self.session_cache.write().await;
-                    write.insert(session.session_id, session.clone());
-                }
+                write.insert(session.session_id, session.clone());
 
-                Ok(QueryMessageResponse {
+                let resp = QueryMessageResponse {
                     session_key: session.session_id,
                     total_count: count_messages as i32,
                     current_page: 1,
-                    total_pages,
+                    total_pages: div_ceil(count_messages as i32, sessionless.page_size),
                     messages: res,
-                })
+                };
+                Ok(resp)
             }
             MessageQueryRequestKind::WithSession(with_session) => {
-                let session: SessionData = {
-                    // Read lock here avoids blocking concurrent requests!
-                    let read = self.session_cache.read().await;
-                    read.get(&with_session.session_id)
+                let session: SessionData;
+
+                {
+                    let write = self.session_cache.write().await;
+                    session = write
+                        .get(&with_session.session_id)
                         .context("session not present")?
-                        .clone()
-                };
+                        .clone();
+                }
 
                 let mut query = session.pattern.clone();
                 let page_number = with_session.page_number;
@@ -456,7 +594,10 @@ RETURNING id, snapshot_taken
                     }
 
                     let new_filter: MessageFilterPattern;
+
                     let timestamp_filter = MessageFilter::InsertTimestamp(TimestampFilter::LessThanEqual(session.issued));
+
+                    dbg!("{:#?}", &query.filter);
 
                     match query.filter {
                         MessageFilterPattern::Single(filter) => {
@@ -479,7 +620,7 @@ RETURNING id, snapshot_taken
                         Cursor::First => {
                             builder.push(" WHERE ");
                             query.filter.append_query(&mut builder);
-                            builder.push(" ORDER BY messages.id DESC ");
+                            builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
                         }
                         Cursor::Other(cursor_data) => {
                             builder.push(" WHERE ");
@@ -491,33 +632,42 @@ RETURNING id, snapshot_taken
 
                             builder.push(" AND ");
                             query.filter.append_query(&mut builder);
-                            builder.push(" ORDER BY messages.id DESC ");
+                            builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
                         }
                     }
 
                     query.limit.append_query(&mut builder);
 
-                    let res = builder
+                    let all_messages = builder
                         .build()
                         .map(|row: PgRow| {
-                            Message {
-                                id: row.get("id"),
-                                timestamp: row.get("timestamp"),
-                                source: MessageSource::new(row.get("source_uuid")),
-                                audience: MessageAudience::new(row.get("audience_users")),
-                                content: row.get("content"),
-                                context: row.get("context"),
+                            let message_id: i64 = row.get("id");
+                            let issued: NaiveDateTime = row.get("issued");
+                            let content: String = row.get("content");
+                            let audience_id: i64 = row.get("audience_id");
+                            let source_id: i64 = row.get("source_id");
+                            let context: String = row.get("context");
+
+                            MessageDetails {
+                                id: message_id,
+                                issued,
+                                content,
+                                audience_id,
+                                source_id,
+                                context,
                             }
                         })
                         .fetch_all(&mut *conn)
                         .await?;
 
-                    let next_page_data = res.last();
+                    let res = Self::_message_details_query(&mut *conn, &all_messages).await?;
+
+                    let next_page_data = all_messages.last();
                     if !session.cursors.contains_key(&(page_number+1)) {
                         if let Some(next_page_cursor) = next_page_data {
                             cursors_copied.insert(page_number+1, Cursor::Other(
                                 CursorData {
-                                    last_issued: next_page_cursor.timestamp,
+                                    last_issued: next_page_cursor.issued,
                                     last_id: next_page_cursor.id,
                                 }
                             ));
@@ -534,7 +684,7 @@ RETURNING id, snapshot_taken
 
                     {
                         let mut write = self.session_cache.write().await;
-                        let updated_session = SessionData {
+                        let session = SessionData {
                             session_id: session.session_id,
                             issued: session.issued,
                             page_size,
@@ -545,7 +695,7 @@ RETURNING id, snapshot_taken
                             total_messages_count: session.total_messages_count,
                         };
 
-                        write.insert(updated_session.session_id, updated_session);
+                        write.insert(session.session_id, session);
                     }
 
                     return Ok(resp)
@@ -557,11 +707,16 @@ RETURNING id, snapshot_taken
                     query.filter.append_query(&mut builder);
 
                     let limit = match query.limit {
-                        Limit::All => Limit::Amount(page_size*2+1),
-                        Limit::Amount(amount) => Limit::Amount(amount*2+1),
+                        Limit::All => {
+                            Limit::Amount(page_size*2+1)
+                        }
+                        Limit::Amount(amount) => {
+                            Limit::Amount(amount*2+1)
+                        }
                     };
 
-                    builder.push(" ORDER BY messages.id DESC ");
+                    builder.push(" GROUP BY messages.id ORDER BY messages.id DESC");
+
                     limit.append_query(&mut builder);
 
                     builder.push(" OFFSET ");
@@ -570,13 +725,20 @@ RETURNING id, snapshot_taken
                     let all_messages = builder
                         .build()
                         .map(|row: PgRow| {
-                            Message {
-                                id: row.get("id"),
-                                timestamp: row.get("timestamp"),
-                                source: MessageSource::new(row.get("source_uuid")),
-                                audience: MessageAudience::new(row.get("audience_users")),
-                                content: row.get("content"),
-                                context: row.get("context"),
+                            let message_id: i64 = row.get("id");
+                            let issued: NaiveDateTime = row.get("issued");
+                            let content: String = row.get("content");
+                            let audience_id: i64 = row.get("audience_id");
+                            let source_id: i64 = row.get("source_id");
+                            let context: String = row.get("context");
+
+                            MessageDetails {
+                                id: message_id,
+                                issued,
+                                content,
+                                audience_id,
+                                source_id,
+                                context,
                             }
                         })
                         .fetch_all(&mut *conn)
@@ -588,13 +750,14 @@ RETURNING id, snapshot_taken
 
                     {
                         let mut cursors_copied = session.cursors.clone();
+
                         let mut write = self.session_cache.write().await;
 
                         if !session.cursors.contains_key(&(page_number+1)) {
                             if let Some(next_page_cursor) = next_page_data {
                                 cursors_copied.insert(page_number+1, Cursor::Other(
                                     CursorData {
-                                        last_issued: next_page_cursor.timestamp,
+                                        last_issued: next_page_cursor.issued,
                                         last_id: next_page_cursor.id,
                                     }
                                 ));
@@ -604,7 +767,7 @@ RETURNING id, snapshot_taken
                             if let Some(current_page_cursor) = current_page_data {
                                 cursors_copied.insert(page_number, Cursor::Other(
                                     CursorData {
-                                        last_issued: current_page_cursor.timestamp,
+                                        last_issued: current_page_cursor.issued,
                                         last_id: current_page_cursor.id,
                                     }
                                 ));
@@ -614,14 +777,14 @@ RETURNING id, snapshot_taken
                             if let Some(prev_page_cursor) = prev_page_page_data {
                                 cursors_copied.insert(page_number-1, Cursor::Other(
                                     CursorData {
-                                        last_issued: prev_page_cursor.timestamp,
+                                        last_issued: prev_page_cursor.issued,
                                         last_id: prev_page_cursor.id,
                                     }
                                 ));
                             };
                         }
 
-                        let updated_session = SessionData {
+                        let session = SessionData {
                             session_id: session.session_id,
                             issued: session.issued,
                             page_size,
@@ -632,11 +795,13 @@ RETURNING id, snapshot_taken
                             total_messages_count: session.total_messages_count
                         };
 
-                        write.insert(updated_session.session_id, updated_session);
+                        write.insert(session.session_id, session);
                     }
 
-                    let mut res = all_messages.into_iter().rev().take(page_size as usize).collect::<Vec<_>>();
-                    res.reverse();
+                    let mut real = all_messages.into_iter().rev().take(page_size as usize).collect::<Vec<_>>();
+                    real.reverse();
+
+                    let res = Self::_message_details_query(&mut *conn, &real).await?;
 
                     let resp = QueryMessageResponse {
                         session_key: session.session_id,
@@ -648,6 +813,12 @@ RETURNING id, snapshot_taken
 
                     return Ok(resp)
                 }
+
+                // let mut count_builder = QueryBuilder::new(count_base_sql);
+
+                // dbg!("{:?}", &new_filter);
+                // dbg!("{}", &builder.sql());
+
             }
         }
     }
