@@ -1,0 +1,26 @@
+use anyhow::anyhow;
+use tokio::sync::broadcast::Receiver;
+use tonic::async_trait;
+use crate::ports::{MessageEvent, MessageEventChannel, MessageEventChannelError, MessageEventChannelResult};
+
+pub struct BroadcastMessageEventChannel {
+    tx: tokio::sync::broadcast::Sender<MessageEvent>,
+}
+
+impl BroadcastMessageEventChannel {
+    pub fn new(buffer: usize) -> Self {
+        let (tx, _) = tokio::sync::broadcast::channel(buffer);
+        Self { tx }
+    }
+}
+
+#[async_trait]
+impl MessageEventChannel for BroadcastMessageEventChannel {
+    fn publish(&self, event: MessageEvent) {
+        let _ = self.tx.send(event);
+    }
+
+    async fn subscribe(&self) -> MessageEventChannelResult<Receiver<MessageEvent>> {
+        Ok(self.tx.subscribe())
+    }
+}

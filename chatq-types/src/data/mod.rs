@@ -188,22 +188,20 @@ mod from_proto {
                     ]),
                 )]));
 
-            println!("{:#?}", filter.clone());
-            println!("{}", filter.clone());
+            dbg!("{:#?}", filter.clone());
+            dbg!("{}", filter.clone());
 
             let pattern = MessageQueryPattern {
                 limit: Limit::Amount(32),
                 filter: filter.clone(),
             };
 
-            println!("{}", pattern.limit);
+            dbg!("{}", pattern.limit);
 
             let res = data
                 .iter()
                 .filter(|op| filter.evaluate(op))
                 .collect::<Vec<_>>();
-
-            println!("{:#?}", res)
         }
 
         #[test]
@@ -219,11 +217,11 @@ mod from_proto {
                 filter,
             };
 
-            println!("{:#?}", query);
+            dbg!("{:#?}", &query);
 
             let grpcd: crate::chatq::MessageQueryPattern = query.into();
 
-            println!("{:#?}", grpcd);
+            dbg!("{:#?}", &grpcd);
 
             let req = SnapshotGenerateRequest {
                 target: Some(target.clone().into()),
