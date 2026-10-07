@@ -16,9 +16,8 @@ impl BroadcastMessageEventChannel {
 
 #[async_trait]
 impl MessageEventChannel for BroadcastMessageEventChannel {
-    fn publish(&self, event: MessageEvent) -> MessageEventChannelResult<()> {
+    fn publish(&self, event: MessageEvent) {
         let _ = self.tx.send(event);
-        Ok(())
     }
 
     async fn subscribe(&self) -> MessageEventChannelResult<Receiver<MessageEvent>> {

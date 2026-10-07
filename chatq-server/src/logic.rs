@@ -32,7 +32,7 @@ where
     let message = ctx.repo.insert(stub).await?;
 
     ctx.channel
-        .publish(MessageEvent::Insert(message.clone()))?;
+        .publish(MessageEvent::Insert(message.clone()));
 
     Ok(message)
 }
@@ -48,7 +48,7 @@ where
     match query.kind {
         MessageQueryRequestKind::Sessionless(inner) => {
             ctx.channel
-                .publish(MessageEvent::Query(inner.pattern.clone()))?;
+                .publish(MessageEvent::Query(inner.pattern.clone()));
         }
         MessageQueryRequestKind::WithSession(_unused) => {}
     }
