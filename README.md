@@ -29,22 +29,22 @@ This repo is structured as a multi-crate workspace:
 
 ### Formalization
 
-The system's information flow can be formalized as a directed, attributed temporal hypergraph $\mathcal{H} = (V, E)$, defined across:
+The system's information flow can be formalized as a directed, attributed temporal hypergraph **ℋ = (V, E)**, defined across:
 
-* $V$: The set of all unique entities (e.g., users, players, agents) in the ecosystem.
-* $\Gamma$: The domain of context qualifiers (e.g., channel, server, zone, or scope identifiers).
-* $T$: The continuous temporal domain ($T \subseteq \mathbb{R}$), represented via standardized timestamps.
+* **V**: The set of all unique entities (e.g., users, players, agents) in the ecosystem.
+* **Γ**: The domain of context qualifiers (e.g., channel, server, zone, or scope identifiers).
+* **T**: The continuous temporal domain (**T ⊆ ℝ**), represented via standardized timestamps.
 
-Every transmitted message constitutes an attributed directed hyperedge $e \in E$:
+Every transmitted message constitutes an attributed directed hyperedge **e ∈ E**:
 
-$$e = (s, A, \gamma, t)$$
+> **e = (s, A, γ, t)**
 
 where:
 
-* $s \in V$ is the **Source** vertex originating the event.
-* $A \subseteq V$ is the target **Audience** subset receiving the event.
-* $\gamma \in \Gamma$ is the **Context** attribute qualifying the spatial scope.
-* $t \in T$ is the **Temporal Anchor** representing ingestion or archive time.
+* **s ∈ V** is the **Source** vertex originating the event.
+* **A ⊆ V** is the target **Audience** subset receiving the event.
+* **γ ∈ Γ** is the **Context** attribute qualifying the spatial scope.
+* **t ∈ T** is the **Temporal Anchor** representing ingestion or archive time.
 
 ### Functional Architecture
 
@@ -52,9 +52,14 @@ where:
 
 ### Navigating the Message History Poset
 
-Message history forms a partially ordered set (poset) of timestamped events $(E, \le)$, totally ordered along the ingestion timeline. Retrieval corresponds to evaluating a filter predicate $\phi : E \to \{\top, \bot\}$ that selects an induced sub-poset $E_\phi = \{e \in E \mid \phi(e) = \top\}$.
+Message history forms a partially ordered set (poset) of timestamped events **(E, ≤)**, totally ordered along the ingestion timeline. Retrieval corresponds to evaluating a filter predicate **φ : E → {⊤, ⊥}** that selects an induced sub-poset:
 
-Because the filter AST supports universal conjunction (`AND`), disjunction (`OR`), and negation (`NOT`), the space of valid filters forms a **Boolean lattice** $(\Phi, \sqcap, \sqcup, \neg)$ under logical entailment. The query engine acts as a lattice homomorphism mapping filter operations directly to set operations over the event archive ($E_{\phi_1 \sqcap \phi_2} = E_{\phi_1} \cap E_{\phi_2}$, $E_{\phi_1 \sqcup \phi_2} = E_{\phi_1} \cup E_{\phi_2}$, etc.).
+> **E_φ = { e ∈ E | φ(e) = ⊤ }**
+
+Because the filter AST supports universal conjunction (`AND`), disjunction (`OR`), and negation (`NOT`), the space of valid filters forms a **Boolean lattice** **(Φ, ⊓, ⊔, ¬)** under logical entailment. The query engine acts as a lattice homomorphism mapping filter operations directly to set operations over the event archive:
+
+* **E_(φ₁ ⊓ φ₂) = E_φ₁ ∩ E_φ₂**
+* **E_(φ₁ ⊔ φ₂) = E_φ₁ ∪ E_φ₂**
 
 The retrieval subsystem supports:
 
@@ -76,8 +81,7 @@ Ensure you have the following installed:
 
 ### 1. Database Setup
 
-Once the given env variables are declared locally,
-launch the local PostgreSQL container:
+Once the given env variables are declared locally, launch the local PostgreSQL container:
 
 ```bash
 docker-compose up -d database
