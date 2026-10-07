@@ -27,7 +27,42 @@ This repo is structured as a multi-crate workspace:
 
 ## Domain & Architecture
 
-### Formalization
+### System Architecture & Data Flow
+
+`chatq-server` manages message delivery and historical indexing across an append-only event stream, routing events from actors to target audiences within isolated scopes.
+
+#### Core Data Entities
+
+* **Entity**: Any addressable actor within the system, including human users, service accounts, and automated agents.
+* **Scope**: The routing and sharding boundary for message isolation, such as a channel, guild, room, or shard.
+* **Event**: An atomic, immutable message envelope containing the sender ID, recipient list, scope ID, ingestion timestamp, and payload.
+* **Timeline**: Monotonically ordered log sequence numbers or timestamps ensuring total delivery and ingestion order.
+
+#### Service Design
+
+Built on Hexagonal Architecture (Ports and Adapters), the service keeps core domain logic isolated from external infrastructure:
+
+* **Inbound Ports**: Entry points exposing high-throughput gRPC endpoints for message ingestion, real-time streaming, and history queries.
+* **Domain Layer**: Enforces routing rules, recipient resolution, and filter tree evaluations.
+* **Outbound Ports**: Pluggable storage and streaming interfaces (`MessageRepo`, `MessageEventChannel`) that decouple domain behavior from possible underlying persistence systems like PostgreSQL, ScyllaDB, Redis, or Kafka.
+
+#### Query Engine & Retrieval
+
+Historical message access operates on an append-only log sorted by ingestion time:
+
+* **Filter Compilation**: An AST evaluates arbitrary boolean logic (`AND`, `OR`, `NOT`) against message attributes like sender, scope, and target recipients, compiling directly to indexed database queries.
+* **Keyset Cursor Pagination**: State-preserving queries rely on composite timestamp and message ID cursors to support deterministic scrolling and stable window traversal without offset performance penalties.
+* **Stateless Range Queries**: Ad-hoc fetches bounded strictly by explicit time intervals or ID ranges.
+* **Audit & Point-in-Time Snapshots**: Queries can freeze an immutable historical window while snapshotting user-to-identifier mappings, ensuring name changes or profile updates do not alter historical records.
+
+---
+
+<details>
+<summary><strong>Theoretical Formalization (Derived Specifications)</strong></summary>
+
+> **THE FOLLOWING IS INTENDED FOR POSSIBLE DERIVED FORMALIZATION EFFORT**
+
+#### Formal Model
 
 The system's information flow can be formalized as a directed, attributed temporal hypergraph **ℋ = (V, E)**, defined across:
 
@@ -46,11 +81,11 @@ where:
 * **γ ∈ Γ** is the **Context** attribute qualifying the spatial scope.
 * **t ∈ T** is the **Temporal Anchor** representing ingestion or archive time.
 
-### Functional Architecture
+#### Functional Invariants
 
 `chatq-server` structurally isolates state side effects from core invariants using Hexagonal Architecture (Ports & Adapters). State transitions and query traversals execute against boundary traits (such as `MessageRepo` and `MessageEventChannel`), decoupling network protocols (gRPC) and persistence mechanisms (PostgreSQL) from domain invariants.
 
-### Navigating the Message History Poset
+#### Navigating the Message History Poset
 
 Message history forms a partially ordered set (poset) of timestamped events **(E, ≤)**, totally ordered along the ingestion timeline. Retrieval corresponds to evaluating a filter predicate **φ : E → {⊤, ⊥}** that selects an induced sub-poset:
 
@@ -63,8 +98,10 @@ Because the filter AST supports universal conjunction (`AND`), disjunction (`OR`
 
 The retrieval subsystem supports:
 
-- **Session-Based vs. Sessionless Queries**: Stateful cursor navigation with fixed windows versus discrete, stateless lookups.
-- **Audit Snapshots**: Freezes an immutable sub-poset matching a query pattern alongside a resolved point-in-time `NameUuidMap` for consistent historical inspection.
+* **Session-Based vs. Sessionless Queries**: Stateful cursor navigation with fixed windows versus discrete, stateless lookups.
+* **Audit Snapshots**: Freezes an immutable sub-poset matching a query pattern alongside a resolved point-in-time `NameUuidMap` for consistent historical inspection.
+
+</details>
 
 ### In-Memory Event Streaming
 
