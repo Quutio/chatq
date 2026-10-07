@@ -1,5 +1,8 @@
+use std::pin::Pin;
 use crate::message_handler::MessageHandler;
 use anyhow::Context;
+use async_stream::try_stream;
+use futures_core::Stream;
 use chatq_types::chatq::{
     FetchSnapshotResponse, GenerateSnapshotResponse, SnapshotFetchRequest, SnapshotGenerateRequest,
 };
@@ -20,6 +23,7 @@ use chatq_types::data::message::Message;
 use crate::{logic, ChatQDao};
 use crate::event_channel::BroadcastMessageEventChannel;
 use crate::logic::Ctx;
+use crate::ports::{MessageEvent, MessageEventChannel};
 
 pub struct GrpcMessageHandler {
     pub logic: Ctx<ChatQDao, BroadcastMessageEventChannel>,
@@ -56,60 +60,43 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
         }))
     }
 
-    type ListenMessagesStream = ReceiverStream<Result<MessageBroadcast, Status>>;
+    type ListenMessagesStream = Pin<Box<dyn Stream<Item = Result<MessageBroadcast, Status>> + Send + 'static>>;
 
     async fn listen_messages(
         &self,
         request: Request<MessageListenRequest>,
     ) -> Result<Response<Self::ListenMessagesStream>, Status> {
 
-        unimplemented!();
+        let req = request.into_inner();
+        let filter = req
+            .pattern
+            .ok_or_else(|| Status::invalid_argument("filter not present"))?;
 
-        // let (tx, rx) = mpsc::channel(4);
-        //
-        // let req = request.into_inner().clone();
-        //
-        // let filter = req
-        //     .pattern
-        //     .ok_or(Status::invalid_argument("filter not present"))?;
-        //
-        // let filter: MessageFilterPattern = filter
-        //     .try_into()
-        //     .map_err(|err| Status::invalid_argument(format!("invalid filter :: {}", err)))?;
-        //
-        // let mut subscribe_rx = self.subscribe_tx.subscribe();
-        // tokio::spawn(async move {
-        //     while let Ok(message) = subscribe_rx.recv().await {
-        //         let internal: chatq::Message = match message
-        //             .clone()
-        //             .msg
-        //             .ok_or(Status::internal("message not present"))
-        //         {
-        //             Ok(val) => val,
-        //             Err(_) => {
-        //                 continue;
-        //             }
-        //         };
-        //
-        //         let internal: Message = match internal.try_into() {
-        //             Ok(val) => val,
-        //             Err(_) => {
-        //                 continue;
-        //             }
-        //         };
-        //
-        //         if filter.evaluate(&internal) {
-        //             match tx.send(Ok(message)).await {
-        //                 Ok(_) => {}
-        //                 Err(_) => {
-        //                     break;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // });
-        //
-        // Ok(Response::new(ReceiverStream::new(rx)))
+        let filter: MessageFilterPattern = filter
+            .try_into()
+            .map_err(|err| Status::invalid_argument(format!("Invalid filter pattern: {}", err)))?;
+
+        let mut subscribe_rx = self.logic.channel.subscribe().await
+            .map_err(|err| Status::aborted(err.to_string()))?;
+
+        let stream = try_stream! {
+            loop {
+                match subscribe_rx.recv().await {
+                    Ok(MessageEvent::Insert(msg)) => {
+                        if filter.evaluate(&msg) {
+                            yield MessageBroadcast { msg: Some(msg.into()) };
+                        }
+                    }
+                    Ok(_) => continue,
+                    Err(broadcast::error::RecvError::Lagged(n)) => {
+                        tracing::warn!(missed = n, "Lagged messages");
+                    }
+                    Err(broadcast::error::RecvError::Closed) => break,
+                }
+            }
+        };
+
+        Ok(Response::new(Box::pin(stream)))
     }
 
     async fn query_messages(
@@ -117,8 +104,6 @@ impl chatq::message_handler_server::MessageHandler for GrpcMessageHandler {
         request: tonic::Request<chatq_types::chatq::MessageQueryRequest>,
     ) -> Result<Response<QueryMessageResponse>, Status> {
         let req = request.into_inner();
-
-        println!("{:#?}", req);
 
         let query: MessageQueryRequest = req
             .try_into()
