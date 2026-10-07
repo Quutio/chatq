@@ -32,6 +32,6 @@ pub type MessageEventChannelResult<T> = Result<T, MessageEventChannelError>;
 
 #[async_trait]
 pub trait MessageEventChannel: Send + Sync {
-    fn publish(&self, event: MessageEvent) -> MessageEventChannelResult<()>;
+    fn publish(&self, event: MessageEvent);
     async fn subscribe(&self) -> MessageEventChannelResult<tokio::sync::broadcast::Receiver<MessageEvent>>;
 }
