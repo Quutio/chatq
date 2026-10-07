@@ -8,3 +8,6 @@
 /chatq-webui/dist/assets/dioxus/snippets/dioxus-interpreter-js-85a0a2f8acce2e86/inline0.js
 /chatq-webui/dist/assets/dioxus/snippets/dioxus-web-a95d8cc6c91ff8eb/inline0.js
 /chatq-webui/dist/tailwind.css
+.idea/**
+.env
+database.env
